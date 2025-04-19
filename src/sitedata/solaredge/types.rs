@@ -3,18 +3,18 @@ use serde::{Deserialize, Serialize};
 // TODO: get rid of ugly wrapper
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct CurrentPowerFlowWrapper {
+pub struct CurrentPowerFlowWrapper {
     pub site_current_power_flow: CurrentPowerFlow,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CurrentPowerFlow {
-    update_refresh_rate: u64,
-    unit: PowerUnit,
-    connections: Vec<Connection>,
+    pub update_refresh_rate: u64,
+    pub unit: PowerUnit,
+    pub connections: Vec<Connection>,
     #[serde(flatten)]
-    devices: DevicePowerFlows,
+    pub devices: DevicePowerFlows,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -27,8 +27,8 @@ pub enum PowerUnit {
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Connection {
-    from: DeviceIdentifier,
-    to: DeviceIdentifier,
+    pub from: DeviceIdentifier,
+    pub to: DeviceIdentifier,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -45,17 +45,17 @@ pub enum DeviceIdentifier {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub struct DevicePowerFlows {
-    grid: DevicePowerFlow,
-    load: DevicePowerFlow,
-    pv: DevicePowerFlow,
-    storage: StoragePowerFlow,
+    pub grid: DevicePowerFlow,
+    pub load: DevicePowerFlow,
+    pub pv: DevicePowerFlow,
+    pub storage: StoragePowerFlow,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DevicePowerFlow {
-    status: DevicePowerFlowStatus,
-    current_power: f64,
+    pub status: DevicePowerFlowStatus,
+    pub current_power: f64,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -68,10 +68,10 @@ pub enum DevicePowerFlowStatus {
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StoragePowerFlow {
-    status: StoragePowerFlowStatus,
-    current_power: f64,
-    charge_level: u64,
-    critical: bool,
+    pub status: StoragePowerFlowStatus,
+    pub current_power: f64,
+    pub charge_level: u64,
+    pub critical: bool,
 }
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
