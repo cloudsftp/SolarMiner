@@ -1,0 +1,23 @@
+#+title: Solar Miner
+
+* Commands
+
+Subscribe to all topics on MQTT
+
+#+begin_src bash
+mosquitto_sub -h 192.168.0.47 -t "#" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -v
+#+end_src
+
+** Plug
+
+Query a status with an empty message
+
+#+begin_src bash
+mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -m ""
+#+end_src
+
+Toggle power
+
+#+begin_src bash
+mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -m "TOGGLE"
+#+end_src
