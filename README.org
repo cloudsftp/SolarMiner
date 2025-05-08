@@ -13,11 +13,17 @@ mosquitto_sub -h 192.168.0.47 -t "#" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -v
 Query a status with an empty message
 
 #+begin_src bash
-mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -m ""
+mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -m "" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
 #+end_src
 
 Toggle power
 
 #+begin_src bash
-mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -m "TOGGLE"
+mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -m "TOGGLE" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
+#+end_src
+
+Query energy consumption
+
+#+begin_src bash
+mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/EnergyToday" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
 #+end_src

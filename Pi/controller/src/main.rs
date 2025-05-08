@@ -3,6 +3,8 @@ use dotenv::dotenv;
 use rumqttc::{AsyncClient, Event, MqttOptions, Packet, QoS};
 use std::{env, time::Duration};
 
+mod plug;
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     dotenv()?;
