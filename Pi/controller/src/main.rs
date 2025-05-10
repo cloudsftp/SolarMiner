@@ -1,38 +1,16 @@
 use anyhow::Error;
 use dotenv::dotenv;
-use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, Packet, Publish, QoS};
+use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, Packet, QoS};
 use std::{env, io, time::Duration};
 
 mod plug;
+mod state;
 
-enum PowerState {
-    ON,
-    OFF,
-    Unknown,
-}
-
-struct State {
-    plug: PowerState,
-}
-
-enum UpdateEvent {
-    PlugUpdate { device: String, on: bool },
-}
-
-impl TryFrom<Publish> for UpdateEvent {
-    type Error = Error;
-
-    fn try_from(value: Publish) -> Result<Self, Self::Error> {
-        let device = value.topic; // TODO: string parsing :(
-        todo!()
-    }
-}
+use state::{PowerState, State, UpdateEvent};
 
 impl State {
     async fn run(mut eventloop: EventLoop) {
-        let mut state = Self {
-            plug: PowerState::Unknown,
-        };
+        let mut state = Self::default();
 
         loop {
             let event = eventloop.poll().await.expect("for now, panic"); // TODO: remove panic
