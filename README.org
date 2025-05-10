@@ -9,8 +9,9 @@ mosquitto_sub -h 192.168.0.47 -t "#" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -v
 #+end_src
 
 ** Plug
+*** Power
 
-Query a status with an empty message
+Query
 
 #+begin_src bash
 mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -m "" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
@@ -22,8 +23,16 @@ Toggle power
 mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -m "TOGGLE" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
 #+end_src
 
-Query energy consumption
+*** Energy Consumption
+
+Query
 
 #+begin_src bash
 mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/EnergyToday" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
+#+end_src
+
+Result
+
+#+begin_src
+stat/plug_bitaxe_001/RESULT {"EnergyToday":{"Total":0.88051,"Yesterday":0.39532,"Today":0.10280}}
 #+end_src

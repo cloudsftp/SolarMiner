@@ -1,12 +1,12 @@
 use anyhow::Error;
 use dotenv::dotenv;
-use rumqttc::{AsyncClient, Event, EventLoop, MqttOptions, Packet, QoS};
+use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS};
 use std::{env, io, time::Duration};
 
 mod plug;
 mod state;
 
-use state::{PowerState, State, UpdateEvent};
+use state::State;
 
 impl State {
     async fn run(mut eventloop: EventLoop) {
@@ -20,31 +20,12 @@ impl State {
             };
         }
     }
-
-    async fn handle_event(self, event: Event) -> Result<Option<Self>, Error> {
-        Ok(match event {
-            Event::Incoming(Packet::Publish(publish)) => {
-                let decoded = UpdateEvent::try_from(publish)?;
-                /*
-                println!(
-                    "Received = '{}' on topic '{}'",
-                    String::from_utf8_lossy(&publish.payload),
-                    publish.topic
-                );
-                 */
-                Some(self)
-            }
-            Event::Incoming(Packet::Disconnect) => {
-                println!("Disconnected");
-                None
-            }
-            _ => Some(self),
-        })
-    }
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
+    env_logger::init();
+
     dotenv()?;
     let mut mqttoptions = MqttOptions::new("Pi", env::var("MQTT_HOST")?, 1883);
 
@@ -70,7 +51,7 @@ async fn main() -> Result<(), Error> {
 
         client
             .publish(
-                "cmnd/plug_bitaxe_001/Power",
+                "cmnd/plug_bitaxe_001/POWER",
                 QoS::AtLeastOnce,
                 false,
                 "TOGGLE",
