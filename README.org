@@ -28,11 +28,34 @@ mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Power" -m "TOGGLE" -u ${M
 Query
 
 #+begin_src bash
-mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/EnergyToday" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
+mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/EnergyToday" -m "" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
 #+end_src
 
 Result
 
 #+begin_src
 stat/plug_bitaxe_001/RESULT {"EnergyToday":{"Total":0.88051,"Yesterday":0.39532,"Today":0.10280}}
+#+end_src
+
+- EnergyTotal,
+- EnergyYesterday, and
+- EnergyToday
+all work
+
+*** Energy Usage
+
+#+begin_src
+stat/plug_bitaxe_001/RESULT = {"EnergyUsage":{"Usage":[0.00000,0.77771],"Export":[0.00000,0.00000]}}
+#+end_src
+
+*** Power and other status
+
+Query
+
+#+begin_src bash
+mosquitto_pub -h 192.168.0.47 -t "cmnd/plug_bitaxe_001/Status" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -m "8"
+#+end_src
+
+#+begin_src
+stat/plug_bitaxe_001/STATUS8 {"StatusSNS":{"Time":"2025-05-11T09:21:03","ENERGY":{"TotalStartTime":"2025-05-06T16:08:12","Total":0.84160,"Yesterday":0.00000,"Today":0.06389,"Power":28.100,"ApparentPower":52.839,"ReactivePower":44.700,"Factor":0.53,"Voltage":234,"Current":0.226},"ESP32":{"Temperature":71.8},"TempUnit":"C"}}
 #+end_src

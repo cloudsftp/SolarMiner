@@ -4,18 +4,52 @@ use serde_json::{Value, json};
 use super::*;
 
 #[test]
-fn decode_command_result() {
+fn command_results_decoding() {
     struct TestCase<'a> {
         name: &'a str,
         payload: Value,
         expected: CommandResult,
     }
 
-    let test_cases = [TestCase {
-        name: "power turned on",
-        payload: json!({"POWER": "ON"}),
-        expected: CommandResult::Power(PowerUpdateValue::On),
-    }];
+    let test_cases = [
+        TestCase {
+            name: "power turned on",
+            payload: json!({"POWER": "ON"}),
+            expected: CommandResult::Power(PowerUpdateValue::On),
+        },
+        TestCase {
+            name: "power turned off",
+            payload: json!({"POWER": "OFF"}),
+            expected: CommandResult::Power(PowerUpdateValue::Off),
+        },
+        TestCase {
+            name: "energy usage query \"EnergyTotal\"",
+            payload: json!({"EnergyTotal": {"total": 3., "yesterday": 2., "today": 1.}}),
+            expected: CommandResult::EnergyConsumption {
+                total: 3.,
+                yesterday: 2.,
+                today: 1.,
+            },
+        },
+        TestCase {
+            name: "energy usage query \"EnergyYesterday\"",
+            payload: json!({"EnergyYesterday": {"total": 3., "yesterday": 2., "today": 1.}}),
+            expected: CommandResult::EnergyConsumption {
+                total: 3.,
+                yesterday: 2.,
+                today: 1.,
+            },
+        },
+        TestCase {
+            name: "energy usage query \"EnergyToday\"",
+            payload: json!({"EnergyToday": {"total": 3., "yesterday": 2., "today": 1.}}),
+            expected: CommandResult::EnergyConsumption {
+                total: 3.,
+                yesterday: 2.,
+                today: 1.,
+            },
+        },
+    ];
 
     for TestCase {
         name,
@@ -32,7 +66,7 @@ fn decode_command_result() {
 }
 
 #[test]
-fn decode_power_event() {
+fn update_events() {
     struct TestCase<'a> {
         name: &'a str,
         topic: &'a str,
