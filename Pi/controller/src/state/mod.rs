@@ -24,7 +24,7 @@ pub struct EnergyState {
 #[derive(Debug)]
 pub struct State {
     plug_power: PowerState,
-    plug_energy: EnergyState,
+    plug_energy: Option<EnergyState>,
 }
 
 impl State {
@@ -58,11 +58,11 @@ impl State {
                             ));
                         }
 
-                        self.plug_energy = EnergyState {
+                        self.plug_energy = Some(EnergyState {
                             total,
                             yesterday,
                             today,
-                        }
+                        })
                     }
                 };
             }
@@ -82,6 +82,7 @@ impl Default for State {
     fn default() -> Self {
         Self {
             plug_power: PowerState::Unknown,
+            plug_energy: None,
         }
     }
 }
