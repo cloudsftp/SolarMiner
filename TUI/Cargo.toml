@@ -1,0 +1,15 @@
+[package]
+name = "TUI"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.98"
+async-nats = "0.38.0"
+bytes = "1.10.1"
+futures-util = "0.3.31"
+log = "0.4.27"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+tokio = { version = "1.45.0", features = ["rt-multi-thread"] }
+messages-common = { git = "https://github.com/sunangel-project/Sunangel", package = "messages-common" }
