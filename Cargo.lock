@@ -221,23 +221,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
 
 [[package]]
-name = "controller"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "dotenv",
- "env_logger",
- "itertools",
- "log",
- "reqwest",
- "rumqttc",
- "serde",
- "serde_json",
- "serde_plain",
- "tokio",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1022,6 +1005,19 @@ dependencies = [
 [[package]]
 name = "nats-common"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-nats",
+ "bytes",
+ "futures-util",
+ "log",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "nats-common"
+version = "0.1.0"
 source = "git+https://github.com/cloudsftp/nats-common.git?branch=latest#472be94fd4c50b9e8046b4eafd8a6aee92889737"
 dependencies = [
  "anyhow",
@@ -1748,13 +1744,34 @@ dependencies = [
 ]
 
 [[package]]
-name = "solarminer"
+name = "solarminer-controller"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "dotenv",
  "env_logger",
+ "itertools",
  "log",
+ "reqwest",
+ "rumqttc",
+ "serde",
+ "serde_json",
+ "serde_plain",
+ "tokio",
+]
+
+[[package]]
+name = "solarminer-server"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-nats",
+ "bytes",
+ "dotenv",
+ "env_logger",
+ "futures-util",
+ "log",
+ "nats-common 0.1.0",
  "reqwest",
  "serde",
  "serde_json",
@@ -1771,7 +1788,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "log",
- "nats-common",
+ "nats-common 0.1.0 (git+https://github.com/cloudsftp/nats-common.git?branch=latest)",
  "serde",
  "serde_json",
  "tokio",
