@@ -1,5 +1,20 @@
 #+title: Solar Miner
 
+* Structure
+
+- =solarminer-server= in server
+- =solarminer-controller= in pi
+- =solarminer-tui= in tui
+
+** Communication
+
+The controller communicates with the local devices via [[https://mqtt.org/][MQTT]].
+
+The controller and the server communicate via [[https://nats.io/][NATS]].
+The user (TUI) also communicates with the server via [[https://nats.io/][NATS]].
+
+Data is stored on the server in a [[https://www.timescale.com/][timescale DB]].
+
 * Commands
 
 Subscribe to all topics on MQTT

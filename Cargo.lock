@@ -3,21 +3,6 @@
 version = 4
 
 [[package]]
-name = "TUI"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-nats",
- "bytes",
- "futures-util",
- "log",
- "messages-common",
- "serde",
- "serde_json",
- "tokio",
-]
-
-[[package]]
 name = "addr2line"
 version = "0.24.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -992,20 +977,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "78ca9ab1a0babb1e7d5695e3530886289c18cf2f87ec19a575a0abdce112e3a3"
 
 [[package]]
-name = "messages-common"
-version = "0.1.0"
-source = "git+https://github.com/sunangel-project/Sunangel#85fd92a62fb63be21c0578f44c9b8570ff1224cc"
-dependencies = [
- "anyhow",
- "async-nats",
- "bytes",
- "futures-util",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1046,6 +1017,20 @@ dependencies = [
  "security-framework 2.11.1",
  "security-framework-sys",
  "tempfile",
+]
+
+[[package]]
+name = "nats-common"
+version = "0.1.0"
+source = "git+https://github.com/cloudsftp/nats-common.git?branch=latest#472be94fd4c50b9e8046b4eafd8a6aee92889737"
+dependencies = [
+ "anyhow",
+ "async-nats",
+ "bytes",
+ "futures-util",
+ "log",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1777,6 +1762,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "solarminer-tui"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-nats",
+ "bytes",
+ "env_logger",
+ "futures-util",
+ "log",
+ "nats-common",
+ "serde",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "spin"
 version = "0.9.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1992,9 +1993,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.14"
+version = "0.7.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b9590b93e6fcc1739458317cccd391ad3955e2bde8913edf6f95f9e65a8f034"
+checksum = "66a539a9ad6d5d281510d5bd368c973d636c02dbf8a67300bfb6b950696ad7df"
 dependencies = [
  "bytes",
  "futures-core",
