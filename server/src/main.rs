@@ -22,6 +22,11 @@ async fn main() -> Result<(), Error> {
 
     let controller_command_stream = create_stream(&js, CONTROLLER_COMMANDS_STREAM).await;
 
+    match js.publish(CONTROLLER_COMMANDS_STREAM, "hello".into()).await {
+        Ok(_) => println!("Ok"),
+        Err(err) => panic!("{}", err),
+    }
+
     while let Some(message) = state_messages.next().await {
         todo!()
     }
