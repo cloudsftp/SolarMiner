@@ -1005,19 +1005,6 @@ dependencies = [
 [[package]]
 name = "nats-common"
 version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-nats",
- "bytes",
- "futures-util",
- "log",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "nats-common"
-version = "0.1.0"
 source = "git+https://github.com/cloudsftp/nats-common.git?branch=latest#472be94fd4c50b9e8046b4eafd8a6aee92889737"
 dependencies = [
  "anyhow",
@@ -1761,7 +1748,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "solarminer-server"
+name = "solarminer-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -1771,7 +1758,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "log",
- "nats-common 0.1.0",
+ "nats-common",
  "reqwest",
  "serde",
  "serde_json",
@@ -1788,7 +1775,7 @@ dependencies = [
  "env_logger",
  "futures-util",
  "log",
- "nats-common 0.1.0 (git+https://github.com/cloudsftp/nats-common.git?branch=latest)",
+ "nats-common",
  "serde",
  "serde_json",
  "tokio",

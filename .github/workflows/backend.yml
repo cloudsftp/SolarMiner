@@ -1,0 +1,51 @@
+name: Build, publish and deploy backend
+
+on: push
+
+jobs:
+    test-and-build:
+      name: Test and Build Backend
+      runs-on: ubuntu-latest
+
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Build and Test All
+          uses: dagger/dagger-for-github@v6
+          with:
+            version: "latest"
+            verb: call
+            args: build-and-test-all --source=.
+            cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+
+  deploy:
+    name: Build, publish and deploy backend
+    runs-on: ubuntu-latest
+
+    needs:
+      - test-and-build
+
+    if: github.event_name == 'push' && contains(github.ref_name, 'latest')
+
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy
+        uses: dagger/dagger-for-github@v6
+        with:
+          version: "latest"
+          verb: call
+          args: publish-and-deploy --source=. --actor=$GITHUB_ACTOR --token=env:GITHUB_TOKEN --host=env:HOST --username=env:USERNAME --key=env:KEY
+          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+          HOST: ${{ secrets.KUSOMISO_HOST }}
+          USERNAME: ${{ secrets.KUSOMISO_USERNAME }}
+          KEY: ${{ secrets.KUSOMISO_SSH_KEY }}
