@@ -3,20 +3,20 @@ name: Build, publish and deploy backend
 on: push
 
 jobs:
-    test-and-build:
-      name: Test and Build Backend
-      runs-on: ubuntu-latest
+  test-and-build:
+    name: Test and Build Backend
+    runs-on: ubuntu-latest
 
-      steps:
-        - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-        - name: Build and Test All
-          uses: dagger/dagger-for-github@v6
-          with:
-            version: "latest"
-            verb: call
-            args: build-and-test-all --source=.
-            cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+      - name: Build and Test All
+        uses: dagger/dagger-for-github@v6
+        with:
+          version: "latest"
+          verb: call
+          args: build-and-test-all --source=.
+          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
 
   deploy:
     name: Build, publish and deploy backend
