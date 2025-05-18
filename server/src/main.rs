@@ -42,15 +42,22 @@ async fn main() -> Result<(), Error> {
 
     tokio::select! {
         Ok(_) = signal::ctrl_c() => {},
-        Err(_) = signal::ctrl_c() => {
-            eprintln!("Could not listen to sigterm")
+        Err(err) = signal::ctrl_c() => {
+            eprintln!("Could not listen to sigterm: {}", err)
         },
-        result = main_task => {match result {
-            Ok(_) => {},
-            Err(_) => {
-                eprintln!("Main task errored")
-            },
-        }},
+        result = main_task => {
+            match result {
+                Ok(Ok(())) => {
+                    println!("Main task exited successfully")
+                },
+                Ok(Err(err)) => {
+                    println!("Main task errored: {}", err)
+                },
+                Err(err) => {
+                    eprintln!("Could not join main task: {}", err)
+                },
+            }
+        }
     }
 
     /*
