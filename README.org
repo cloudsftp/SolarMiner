@@ -15,7 +15,35 @@ The user (TUI) also communicates with the server via [[https://nats.io/][NATS]].
 
 Data is stored on the server in a [[https://www.timescale.com/][timescale DB]].
 
-* Commands
+* Developing
+
+TODO: maybe dagger
+
+** Infrastructure
+
+In the root run
+
+#+begin_src shell
+docker compose up -d
+#+end_src
+
+** Controller
+
+In pi run
+
+#+begin_src shell
+cargo run
+#+end_src
+
+** Service
+
+In server run
+
+#+begin_src shell
+cargo run
+#+end_src
+
+* MQTT commands
 
 Subscribe to all topics on MQTT
 

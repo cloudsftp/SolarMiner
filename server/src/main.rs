@@ -5,10 +5,7 @@ use dotenv::dotenv;
 use futures_util::StreamExt;
 use log::{debug, error, info};
 use nats_common::{MessageStream, connect_jetstream, create_stream, try_pub_sub_subscribe};
-use tokio::signal::{
-    self,
-    unix::{self, SignalKind},
-};
+use tokio::signal::unix::{self, SignalKind};
 
 mod sitedata;
 
