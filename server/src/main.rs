@@ -34,25 +34,8 @@ async fn main() -> Result<(), Error> {
     let main_task = tokio::spawn(run(config));
 
     let mut signal_terminate = unix::signal(SignalKind::terminate())?;
-    let mut signal_interrupt = unix::signal(SignalKind::interrupt())?;
-    let mut signal_quit = unix::signal(SignalKind::quit())?;
-
     tokio::select! {
-        _ = signal_terminate.recv() => {
-            debug!("Received signal terminate")
-        },
-        _ = signal_interrupt.recv() => {
-            debug!("Received signal interrupt")
-        },
-        _ = signal_quit.recv() => {
-            debug!("Received signal quit")
-        },
-        Ok(_) = signal::ctrl_c() => {
-            debug!("Received signal ctrl c")
-        },
-        Err(err) = signal::ctrl_c() => {
-            error!("Could not listen to sigterm: {}", err)
-        },
+        _ = signal_terminate.recv() => {},
         result = main_task => {
             match result {
                 Ok(Ok(())) => {
