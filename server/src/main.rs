@@ -5,22 +5,51 @@ use dotenv::dotenv;
 use futures_util::StreamExt;
 use log::{debug, error, info};
 use nats_common::{MessageStream, connect_jetstream, create_stream, try_pub_sub_subscribe};
-use tokio::signal;
+use tokio::signal::{
+    self,
+    unix::{self, SignalKind},
+};
 
 mod sitedata;
 
-const STATE_STREAM: &str = "controller-state";
-const CONTROLLER_COMMANDS_STREAM: &str = "controller-commands";
+#[derive(Debug, Clone, Copy)]
+struct Config {
+    state_stream_name: &'static str,
+    controller_commands_stream_name: &'static str,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     env_logger::init();
     dotenv()?;
 
-    let main_task = tokio::spawn(run());
+    let state_stream_name: &str = env::var("STATE_STREAM_NAME")?.leak();
+    let controller_commands_stream_name: &str = env::var("CONTROLLER_COMMANDS_STREAM_NAME")?.leak();
+
+    let config = Config {
+        state_stream_name,
+        controller_commands_stream_name,
+    };
+
+    let main_task = tokio::spawn(run(config));
+
+    let mut signal_terminate = unix::signal(SignalKind::terminate())?;
+    let mut signal_interrupt = unix::signal(SignalKind::interrupt())?;
+    let mut signal_quit = unix::signal(SignalKind::quit())?;
 
     tokio::select! {
-        Ok(_) = signal::ctrl_c() => {},
+        _ = signal_terminate.recv() => {
+            debug!("Received signal terminate")
+        },
+        _ = signal_interrupt.recv() => {
+            debug!("Received signal interrupt")
+        },
+        _ = signal_quit.recv() => {
+            debug!("Received signal quit")
+        },
+        Ok(_) = signal::ctrl_c() => {
+            debug!("Received signal ctrl c")
+        },
         Err(err) = signal::ctrl_c() => {
             error!("Could not listen to sigterm: {}", err)
         },
@@ -56,17 +85,21 @@ async fn main() -> Result<(), Error> {
     Ok(())
 }
 
-async fn run() -> Result<(), Error> {
+async fn run(config: Config) -> Result<(), Error> {
     let js = connect_jetstream().await;
-    let state_stream = create_stream(&js, STATE_STREAM).await;
-    let mut state_messages: MessageStream = try_pub_sub_subscribe(&js, STATE_STREAM)
+    let state_stream = create_stream(&js, &config.state_stream_name).await;
+    let mut state_messages: MessageStream = try_pub_sub_subscribe(&js, &config.state_stream_name)
         .await
         .map_err(|err| anyhow!(err)) // TODO: remove as soon as library has better errors
         .context("could not subscribe to controller state stream")?;
 
-    let controller_command_stream = create_stream(&js, CONTROLLER_COMMANDS_STREAM).await;
+    let controller_command_stream =
+        create_stream(&js, &config.controller_commands_stream_name).await;
 
-    match js.publish(CONTROLLER_COMMANDS_STREAM, "hello".into()).await {
+    match js
+        .publish(config.controller_commands_stream_name, "hello".into())
+        .await
+    {
         Ok(_) => println!("Ok"),
         Err(err) => panic!("{}", err),
     }
