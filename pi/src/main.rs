@@ -1,9 +1,25 @@
-use anyhow::{Context, Error};
+use anyhow::{Context, Error, anyhow};
+use async_nats::ConnectOptions;
 use dotenv::dotenv;
+use futures_util::StreamExt;
+use log::{debug, error, info};
+use nats_common::{
+    MessageStream, connect_jetstream, connect_nats, create_stream, try_pub_sub_subscribe,
+};
 use std::{env, io, time::Duration};
+use tokio::{
+    signal::unix::{self, SignalKind},
+    time::sleep,
+};
 
 mod plug;
 mod state;
+
+#[derive(Debug, Clone, Copy)]
+struct Config {
+    state_stream_name: &'static str,
+    controller_commands_stream_name: &'static str,
+}
 
 use state::State;
 
@@ -23,39 +39,75 @@ impl State {
 }
 */
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    env_logger::init();
-    dotenv()?;
-
 async fn run(config: Config) -> Result<(), Error> {
+    /*
     let js = connect_jetstream().await;
     let state_stream = create_stream(&js, &config.state_stream_name).await;
-    let mut state_messages: MessageStream = try_pub_sub_subscribe(&js, &config.state_stream_name)
-        .await
-        .map_err(|err| anyhow!(err)) // TODO: remove as soon as library has better errors
-        .context("could not subscribe to controller state stream")?;
 
     let controller_command_stream =
         create_stream(&js, &config.controller_commands_stream_name).await;
+    let mut command_messages: MessageStream =
+        try_pub_sub_subscribe(&js, &config.controller_commands_stream_name)
+            .await
+            .map_err(|err| anyhow!(err)) // TODO: remove as soon as library has better errors
+            .context("could not subscribe to controller state stream")?;
 
-    match js
-        .publish(config.controller_commands_stream_name, "hello".into())
-        .await
-    {
-        Ok(_) => println!("Ok"),
-        Err(err) => panic!("{}", err),
+
+    while let Some(message) = plug_state_messages.next().await {
+        debug!("Received message {:?}", message);
     }
+    */
 
-    while let Some(message) = state_messages.next().await {
+    let pi_host = env::var("PI_NATS_HOST")?;
+    let pi_port = env::var("PI_NATS_PORT")?;
+    let pi_options = ConnectOptions::new().token(env::var("PI_NATS_PASSWORD")?);
+
+    let nats = pi_options
+        .connect(format!("{}:{}", pi_host, pi_port))
+        .await?;
+
+    let mut plug_state_messages = nats.subscribe("stat.plug_bitaxe_001.LOGGING").await?;
+    while let Some(message) = plug_state_messages.next().await {
         debug!("Received message {:?}", message);
     }
 
     Ok(())
 }
 
+#[tokio::main]
+async fn main() -> Result<(), Error> {
+    env_logger::init();
+    dotenv()?;
+
+    let state_stream_name: &str = env::var("STATE_STREAM_NAME")?.leak();
+    let controller_commands_stream_name: &str = env::var("CONTROLLER_COMMANDS_STREAM_NAME")?.leak();
+
+    let config = Config {
+        state_stream_name,
+        controller_commands_stream_name,
+    };
+
     let main_task = tokio::spawn(run(config));
 
+    let mut signal_terminate = unix::signal(SignalKind::terminate())?;
+    tokio::select! {
+        _ = signal_terminate.recv() => {},
+        result = main_task => {
+            match result {
+                Ok(Ok(())) => {
+                    info!("Main task exited successfully")
+                },
+                Ok(Err(err)) => {
+                    error!("Main task errored: {}", err)
+                },
+                Err(err) => {
+                    error!("Could not join main task: {}", err)
+                },
+            }
+        }
+    }
+
+    Ok(())
 
     /*
     let mut mqttoptions = MqttOptions::new("Controller", env::var("MQTT_HOST")?, 1883);
