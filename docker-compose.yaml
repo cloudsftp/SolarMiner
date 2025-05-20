@@ -17,12 +17,14 @@ services:
     image: nats:latest
     container_name: nats-server
     ports:
-      - "6682:4222" # Client connections
-      - "6683:6222" # Routes
-      - "6684:8222" # Monitoring
-    command: "--name main --jetstream --http_port 8222"
+      - "6682:4222" # NATS Client connections
+      - "6683:1883" # MQTT client connections
+      - "6684:6222" # Routes
+      - "6685:8222" # Monitoring
+    command: "-c /nats.conf"
     volumes:
       - jetstream-data:/tmp/nats/jetstream
+      - ./nats.conf:/nats.conf:ro
 
 volumes:
   timescaledb-data:

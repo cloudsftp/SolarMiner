@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  nats:
+    image: nats:latest
+    container_name: nats-server
+    ports:
+      - "6682:4222" # NATS Client connections
+      - "6683:1883" # MQTT client connections
+      - "6684:6222" # Routes
+      - "6685:8222" # Monitoring
+    command: "-c /nats.conf"
+    volumes:
+      - ./jetstream-data:/tmp/nats/jetstream
+      - ./nats.conf:/nats.conf:ro

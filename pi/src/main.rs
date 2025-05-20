@@ -1,4 +1,4 @@
-use anyhow::Error;
+use anyhow::{Context, Error};
 use dotenv::dotenv;
 use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS};
 use std::{env, io, time::Duration};
@@ -27,12 +27,27 @@ async fn main() -> Result<(), Error> {
     env_logger::init();
 
     dotenv()?;
-    let mut mqttoptions = MqttOptions::new("Pi", env::var("MQTT_HOST")?, 1883);
+    let mut mqttoptions = MqttOptions::new("Controller", env::var("MQTT_HOST")?, 1883);
 
     mqttoptions.set_credentials(env::var("MQTT_USER")?, env::var("MQTT_PASSWORD")?);
     mqttoptions.set_keep_alive(Duration::from_secs(5));
 
     let (client, eventloop) = AsyncClient::new(mqttoptions, 10);
+
+    let mut mqttoptions = MqttOptions::new(
+        "Service",
+        env::var("NATS_HOST").context("variable name: NATS_HOST")?,
+        env::var("NATS_PORT")
+            .context("variable name: NATS_PORT")?
+            .parse()
+            .context(format!("variable name: NATS_PORT, value: "))?,
+    );
+
+    if let Ok(token) = env::var("SERVER_TOKEN") {
+        mqttoptions.set_credentials("", token);
+    }
+
+    let (service_client, service_eventloop) = AsyncClient::new(mqttoptions, 10);
 
     let client_sub = client.clone();
     tokio::spawn(async move {
