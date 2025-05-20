@@ -1,6 +1,5 @@
 use anyhow::{Context, Error};
 use dotenv::dotenv;
-use rumqttc::{AsyncClient, EventLoop, MqttOptions, QoS};
 use std::{env, io, time::Duration};
 
 mod plug;
@@ -8,6 +7,7 @@ mod state;
 
 use state::State;
 
+/*
 impl State {
     async fn run(mut eventloop: EventLoop) {
         let mut state = Self::default();
@@ -21,12 +21,43 @@ impl State {
         }
     }
 }
+*/
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     env_logger::init();
-
     dotenv()?;
+
+async fn run(config: Config) -> Result<(), Error> {
+    let js = connect_jetstream().await;
+    let state_stream = create_stream(&js, &config.state_stream_name).await;
+    let mut state_messages: MessageStream = try_pub_sub_subscribe(&js, &config.state_stream_name)
+        .await
+        .map_err(|err| anyhow!(err)) // TODO: remove as soon as library has better errors
+        .context("could not subscribe to controller state stream")?;
+
+    let controller_command_stream =
+        create_stream(&js, &config.controller_commands_stream_name).await;
+
+    match js
+        .publish(config.controller_commands_stream_name, "hello".into())
+        .await
+    {
+        Ok(_) => println!("Ok"),
+        Err(err) => panic!("{}", err),
+    }
+
+    while let Some(message) = state_messages.next().await {
+        debug!("Received message {:?}", message);
+    }
+
+    Ok(())
+}
+
+    let main_task = tokio::spawn(run(config));
+
+
+    /*
     let mut mqttoptions = MqttOptions::new("Controller", env::var("MQTT_HOST")?, 1883);
 
     mqttoptions.set_credentials(env::var("MQTT_USER")?, env::var("MQTT_PASSWORD")?);
@@ -74,4 +105,5 @@ async fn main() -> Result<(), Error> {
             .await?;
         println!("Published message.");
     }
+     */
 }

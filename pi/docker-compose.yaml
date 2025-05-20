@@ -5,11 +5,11 @@ services:
     image: nats:latest
     container_name: nats-server
     ports:
-      - "6682:4222" # NATS Client connections
-      - "6683:1883" # MQTT client connections
-      - "6684:6222" # Routes
-      - "6685:8222" # Monitoring
+      - "1883:1883" # MQTT client connections
+      - "4222:4222" # NATS Client connections
+      - "6222:6222" # Routes
+      - "8222:8222" # Monitoring
     command: "-c /nats.conf"
     volumes:
-      - ./jetstream-data:/tmp/nats/jetstream
+      - ~/jetstream-data:/tmp/nats/jetstream
       - ./nats.conf:/nats.conf:ro
