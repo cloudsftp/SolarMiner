@@ -3,7 +3,6 @@ version: "3.8"
 services:
   nats:
     image: nats:latest
-    container_name: nats-server
     ports:
       - "1883:1883" # MQTT client connections
       - "4222:4222" # NATS Client connections
@@ -11,5 +10,27 @@ services:
       - "8222:8222" # Monitoring
     command: "-c /nats.conf"
     volumes:
-      - ~/jetstream-data:/tmp/nats/jetstream
+      - ~/jetstream-data:/data/jetstream
       - ./nats.conf:/nats.conf:ro
+
+  solaredge:
+    image: ghcr.io/deroetzi/solaredge2mqtt:latest
+    env_file:
+      - ./.env
+    secrets:
+      - se2mqtt_mqtt__password
+
+  influxdb:
+    image: influxdb:3-core
+    ports:
+      - 8181:8181
+    command:
+      - influxdb3
+      - serve
+      - --node-id=node0
+      - --object-store=file
+      - --data-dir=/var/lib/influxdb3
+
+secrets:
+  se2mqtt_mqtt__password:
+    file: .secrets/mqtt_password
