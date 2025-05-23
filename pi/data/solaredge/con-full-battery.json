@@ -1,0 +1,30 @@
+{
+  "pv_production": 0,
+  "inverter": {
+    "power": 267,
+    "dc_power": 271,
+    "consumption": 0,
+    "production": 267,
+    "battery_production": 267,
+    "pv_production": 0
+  },
+  "grid": {
+    "power": 2,
+    "consumption": 0,
+    "delivery": 2
+  },
+  "battery": {
+    "power": -313,
+    "charge": 0,
+    "discharge": 313
+  },
+  "consumer": {
+    "house": 265,
+    "evcharger": 0,
+    "inverter": 0,
+    "used_production": 265,
+    "total": 265,
+    "used_battery_production": 265,
+    "used_pv_production": 0
+  }
+}
