@@ -49,8 +49,6 @@ async fn run(config: Config, pi_nats: Client, server_js: Context) -> Result<(), 
 
     let mut state = State::new(config);
     while let Some(message) = pi_messages.next().await {
-        debug!("Received message {:?}", message);
-        info!("Topic: {}", message.subject.to_string());
         state = state.handle_message(message, &pi_nats, &server_js).await?;
     }
 
