@@ -19,6 +19,7 @@ struct Config {
     state_stream_name: String,
     controller_commands_stream_name: String,
     plug_name: String,
+    miner_demand: usize,
 }
 
 use state::State;
