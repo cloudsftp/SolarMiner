@@ -69,6 +69,19 @@ fn get_env(key: &str) -> Result<String, Error> {
     env::var(key).context(format!("could not get value for key '{}'", key))
 }
 
+async fn connect_nats_client(prefix: &str) -> Result<Client, Error> {
+    let get_env = |name| get_env(&format!("{}_{}", prefix, name));
+
+    let host = get_env("NATS_HOST")?;
+    let port = get_env("NATS_PORT")?;
+    let options = ConnectOptions::new().token(get_env("NATS_PASSWORD")?);
+
+    options
+        .connect(format!("{}:{}", host, port))
+        .await
+        .context(format!("Could not connect to nats server '{}'", prefix))
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Error> {
     env_logger::init();
@@ -82,21 +95,9 @@ async fn main() -> Result<(), Error> {
         controller_commands_stream_name,
     };
 
-    let pi_host = get_env("PI_NATS_HOST")?;
-    let pi_port = get_env("PI_NATS_PORT")?;
-    let pi_options = ConnectOptions::new().token(get_env("PI_NATS_PASSWORD")?);
+    let pi_nats = connect_nats_client("PI").await?;
 
-    let pi_nats = pi_options
-        .connect(format!("{}:{}", pi_host, pi_port))
-        .await?;
-
-    let server_host = get_env("SERVER_NATS_HOST")?;
-    let server_port = get_env("SERVER_NATS_PORT")?;
-    let server_options = ConnectOptions::new().token(get_env("SERVER_NATS_PASSWORD")?);
-
-    let server_nats = server_options
-        .connect(format!("{}:{}", server_host, server_port))
-        .await?;
+    let server_nats = connect_nats_client("SERVER").await?;
     let server_js = jetstream::new(server_nats);
 
     let main_task = tokio::spawn(run(config, pi_nats, server_js)); // TODO: wrap communications in struct, extra thread for sending?
