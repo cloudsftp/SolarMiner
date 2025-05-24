@@ -1,58 +1,37 @@
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::{
     Client, ConnectOptions, Message,
-    jetstream::{self, Context},
+    jetstream::{self, Context, stream},
 };
 use dotenv::dotenv;
 use futures::{Stream, StreamExt, future::try_join_all, stream::select_all};
 use log::{debug, error, info};
-use std::env;
+use serde::Deserialize;
+use serde_json::from_reader;
+use std::{env, fs::File, io::BufReader};
 use tokio::signal::unix::{self, SignalKind};
 
 mod plug;
 mod state;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Deserialize)]
 struct Config {
-    state_stream_name: &'static str,
-    controller_commands_stream_name: &'static str,
+    state_stream_name: String,
+    controller_commands_stream_name: String,
+    plug_name: String,
 }
 
 use state::State;
 
-/*
-impl State {
-    async fn run(mut eventloop: EventLoop) {
-        let mut state = Self::default();
-
-        loop {
-            let event = eventloop.poll().await.expect("for now, panic"); // TODO: remove panic
-            state = match state.handle_event(event).await.expect("for now, panic") {
-                Some(state) => state,
-                None => break,
-            };
-        }
-    }
-}
-*/
-
 async fn run(config: Config, pi_nats: Client, server_js: Context) -> Result<(), Error> {
-    /*
-    let controller_command_stream =
-        create_stream(&js, &config.controller_commands_stream_name).await;
-    let mut command_messages: MessageStream =
-        try_pub_sub_subscribe(&js, &config.controller_commands_stream_name)
-            .await
-            .map_err(|err| anyhow!(err)) // TODO: remove as soon as library has better errors
-            .context("could not subscribe to controller state stream")?;
+    server_js
+        .create_or_update_stream(stream::Config {
+            name: config.state_stream_name.clone(),
+            ..Default::default()
+        })
+        .await
+        .context("Could not create the state stream for the service")?;
 
-
-    while let Some(message) = plug_state_messages.next().await {
-        debug!("Received message {:?}", message);
-    }
-    */
-
-    // TODO: multiple subscribers: https://natsbyexample.com/examples/messaging/iterating-multiple-subscriptions/rust
     let mut pi_messages = nats_subscribe(
         &pi_nats,
         &[
@@ -61,15 +40,18 @@ async fn run(config: Config, pi_nats: Client, server_js: Context) -> Result<(), 
             "solaredge.powerflow",
         ],
     )
-    .await?;
+    .await
+    .context("Could not subscribe to the subjects on the controller")?;
 
-    info!("subscribed to nats");
+    pi_nats
+        .publish("cmnd.plug_bitaxe_001.Power", "".into())
+        .await?;
 
-    let mut state = State::default();
+    let mut state = State::new(config);
     while let Some(message) = pi_messages.next().await {
         debug!("Received message {:?}", message);
         info!("Topic: {}", message.subject.to_string());
-        state = state.handle_message(message).await?;
+        state = state.handle_message(message, &pi_nats, &server_js).await?;
     }
 
     Ok(())
@@ -94,6 +76,7 @@ async fn main() -> Result<(), Error> {
     env_logger::init();
     dotenv()?;
 
+    /*
     let state_stream_name: &str = get_env("STATE_STREAM_NAME")?.leak();
     let controller_commands_stream_name: &str = get_env("CONTROLLER_COMMANDS_STREAM_NAME")?.leak();
 
@@ -101,6 +84,9 @@ async fn main() -> Result<(), Error> {
         state_stream_name,
         controller_commands_stream_name,
     };
+    */
+    let config_file = File::open("config.json")?;
+    let config = from_reader(BufReader::new(config_file))?;
 
     let pi_nats = connect_nats_client("PI").await?;
 
@@ -108,6 +94,8 @@ async fn main() -> Result<(), Error> {
     let server_js = jetstream::new(server_nats);
 
     let main_task = tokio::spawn(run(config, pi_nats, server_js)); // TODO: wrap communications in struct, extra thread for sending?
+
+    // TODO: second task probing energy periodically (e.g. 1h)
 
     let mut signal_terminate = unix::signal(SignalKind::terminate())?;
     tokio::select! {
@@ -127,19 +115,6 @@ async fn main() -> Result<(), Error> {
         }
     }
 
-    /*
-    tokio::spawn(async move {
-        client_sub
-            .subscribe("stat/+/RESULT", QoS::AtLeastOnce)
-            .await
-            .unwrap();
-        println!("Subscribed to stat/plug_bitaxe_001/RESULT");
-
-        State::run(eventloop).await;
-    });
-
-     */
-
     Ok(())
 }
 
@@ -148,7 +123,7 @@ async fn connect_nats_client(prefix: &str) -> Result<Client, Error> {
 
     let host = get_env("NATS_HOST")?;
     let port = get_env("NATS_PORT")?;
-    let options = ConnectOptions::new().token(get_env("NATS_PASSWORD")?);
+    let options = ConnectOptions::new().token(get_env("NATS_TOKEN")?);
 
     options
         .connect(format!("{}:{}", host, port))

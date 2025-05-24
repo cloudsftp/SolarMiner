@@ -1,0 +1,5 @@
+{
+    "state_stream_name": "controller_state",
+    "controller_commands_stream_name": "controller_state",
+    "plug_name": "plug_bitaxe_001"
+}

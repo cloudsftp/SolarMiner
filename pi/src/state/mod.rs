@@ -1,9 +1,11 @@
-use anyhow::{Context, Error, anyhow};
-use async_nats::{Message, Subject};
+use anyhow::{Context as AnyhowContext, Error, anyhow};
+use async_nats::{Client, Message, Subject, jetstream::Context};
 use bytes::Bytes;
 use itertools::Itertools;
-use log::{debug, info};
+use log::debug;
 use serde::Deserialize;
+
+use crate::Config;
 
 #[cfg(test)]
 mod test;
@@ -29,7 +31,12 @@ pub struct State {
 }
 
 impl State {
-    pub async fn handle_message(mut self, message: Message) -> Result<Self, Error> {
+    pub async fn handle_message(
+        mut self,
+        message: Message,
+        pi_nats: &Client,
+        server_js: &Context,
+    ) -> Result<Self, Error> {
         let update = UpdateEvent::try_from(&message)?;
         match update {
             UpdateEvent::PlugStateUpdate { device, on } => {
@@ -66,13 +73,13 @@ impl State {
             }
         };
 
-        info!("Updated state: {:?}", self);
+        debug!("Updated state: {:?}", self);
         Ok(self)
     }
 }
 
-impl Default for State {
-    fn default() -> Self {
+impl State {
+    pub fn new(config: Config) -> Self {
         Self {
             plug_power: PowerState::Unknown,
             plug_energy: None,

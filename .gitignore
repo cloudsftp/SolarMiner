@@ -1,5 +1,6 @@
 .env
 .secrets
+config.json
 
 # Added by cargo
 

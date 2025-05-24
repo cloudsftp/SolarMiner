@@ -1,34 +1,26 @@
 * NATS
 ** Plug
-
-listen for results
+*** Listen for results
 
 #+begin_src bash
-nats -s 192.168.2.109 --token ${PI_NATS_PASSWORD} sub "stat.*.RESULT"
+nats -s ${PI_NATS_HOST} --token ${PI_NATS_PASSWORD} sub "stat.*.RESULT"
 #+end_src
 
-toggle
+*** Query
 
 #+begin_src bash
-mosquitto_pub -h 192.168.0.48 -t "cmnd/plug_bitaxe_001/Power" -m "TOGGLE" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
+nats -s ${PI_NATS_HOST} --token ${PI_NATS_PASSWORD} pub "cmnd.plug_bitaxe_001.Power" ""
+#+end_src
+
+*** Toggle
+
+#+begin_src bash
+nats -s ${PI_NATS_HOST} --token ${PI_NATS_PASSWORD} pub "cmnd.plug_bitaxe_001.Power" "TOGGLE"
 #+end_src
 
 * MQTT (old)
 
 ** Plug
-*** Power
-
-Query
-
-#+begin_src bash
-mosquitto_pub -h 192.168.0.48 -t "cmnd/plug_bitaxe_001/Power" -m "" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
-#+end_src
-
-Toggle power
-
-#+begin_src bash
-mosquitto_pub -h 192.168.0.48 -t "cmnd/plug_bitaxe_001/Power" -m "TOGGLE" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
-#+end_src
 
 *** Energy Consumption
 
