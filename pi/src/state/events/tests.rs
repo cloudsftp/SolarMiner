@@ -1,3 +1,5 @@
+use std::fs::File;
+
 use serde_json::{Value, json};
 
 use super::*;
@@ -14,12 +16,12 @@ fn command_results_decoding() {
         TestCase {
             name: "power turned on",
             payload: json!({"POWER": "ON"}),
-            expected: CommandResult::Power(PowerUpdateValue::On),
+            expected: CommandResult::Power(PlugStateValue::On),
         },
         TestCase {
             name: "power turned off",
             payload: json!({"POWER": "OFF"}),
-            expected: CommandResult::Power(PowerUpdateValue::Off),
+            expected: CommandResult::Power(PlugStateValue::Off),
         },
         TestCase {
             name: "energy usage query \"EnergyTotal\"",
@@ -116,4 +118,23 @@ fn update_events() {
 
         assert_eq!(decoded, expected, "in test case '{}'", name);
     }
+}
+
+#[test]
+fn battery_state() {
+    let file =
+        File::open("data/solaredge/battery_discharging_99.json").expect("could not open file");
+
+    let battery_state: BatteryState =
+        serde_json::from_reader(file).expect("could not decode battery state");
+
+    dbg!(&battery_state);
+
+    assert_eq!(
+        BatteryState {
+            status: BatteryStatus::Discharging,
+            state_of_charge: 98.89,
+        },
+        battery_state
+    )
 }

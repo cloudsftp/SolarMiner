@@ -1,14 +1,14 @@
 mod events;
 
+#[cfg(test)]
+mod tests;
+
 use anyhow::{Context as AnyhowContext, Error, anyhow};
-use async_nats::{Client, Message, Subject, jetstream::Context};
+use async_nats::{Client, Message, jetstream::Context};
 use events::UpdateEvent;
 use log::debug;
 
 use crate::Config;
-
-#[cfg(test)]
-mod test;
 
 #[derive(Debug)]
 pub enum PlugState {

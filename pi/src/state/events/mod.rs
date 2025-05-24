@@ -7,6 +7,7 @@ use bytes::Bytes;
 use itertools::Itertools;
 use log::debug;
 use serde::Deserialize;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 
 #[derive(Debug, PartialEq)]
 pub enum UpdateEvent {
@@ -42,7 +43,7 @@ pub struct PowerDemand {
 }
 
 #[derive(Debug, PartialEq, Deserialize)]
-enum PowerUpdateValue {
+enum PlugStateValue {
     #[serde(alias = "ON")]
     On,
     #[serde(alias = "OFF")]
@@ -52,7 +53,7 @@ enum PowerUpdateValue {
 #[derive(Debug, PartialEq, Deserialize)]
 enum CommandResult {
     #[serde(alias = "POWER")]
-    Power(PowerUpdateValue),
+    Power(PlugStateValue),
     #[serde(
         alias = "EnergyTotal",
         alias = "EnergyYesterday",
@@ -93,10 +94,20 @@ struct ConsumerPower {
     house: usize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, PartialEq, Deserialize)]
 struct BatteryState {
-    status: usize, // TODO: enum (4: discharge)
+    status: BatteryStatus, // TODO: enum (4: discharge)
     state_of_charge: f32,
+}
+
+#[derive(Debug, PartialEq, Serialize_repr, Deserialize_repr)]
+#[repr(usize)]
+enum BatteryStatus {
+    ZERO = 0,
+    ONE = 1,
+    TWO = 2,
+    THREE = 3,
+    Discharging = 4,
 }
 
 impl TryFrom<&Message> for UpdateEvent {
@@ -119,7 +130,7 @@ impl TryFrom<&Message> for UpdateEvent {
 
                 match result {
                     CommandResult::Power(value) => {
-                        let on = matches!(value, PowerUpdateValue::On);
+                        let on = matches!(value, PlugStateValue::On);
                         UpdateEvent::PlugStateUpdate { device, on }
                     }
                     CommandResult::EnergyConsumption {
@@ -132,9 +143,9 @@ impl TryFrom<&Message> for UpdateEvent {
                 }
             }
             ["stat", _location @ .., device, "POWER"] => {
-                let plug_update: PowerUpdateValue = serde_plain::from_str(
-                    &String::from_utf8_lossy(&message.payload),
-                )
+                let plug_update: PlugStateValue = serde_plain::from_str(&String::from_utf8_lossy(
+                    &message.payload,
+                ))
                 .context(format!(
                     "could not decode payload '{}' received on subject '{}'",
                     String::from_utf8_lossy(&message.payload),
@@ -142,7 +153,7 @@ impl TryFrom<&Message> for UpdateEvent {
                 ))?;
 
                 let device = (*device).into();
-                let on = matches!(plug_update, PowerUpdateValue::On);
+                let on = matches!(plug_update, PlugStateValue::On);
                 UpdateEvent::PlugStateUpdate { device, on }
             }
             ["solaredge", "powerflow"] => {
