@@ -2,7 +2,6 @@ use serde_json::{Value, json};
 
 use super::*;
 
-/*
 #[test]
 fn command_results_decoding() {
     struct TestCase<'a> {
@@ -69,7 +68,7 @@ fn command_results_decoding() {
 fn update_events() {
     struct TestCase<'a> {
         name: &'a str,
-        topic: &'a str,
+        subject: &'a str,
         payload: &'a str,
         expected: UpdateEvent,
     }
@@ -77,7 +76,7 @@ fn update_events() {
     let test_cases = [
         TestCase {
             name: "simple on",
-            topic: "stat/power_device/POWER",
+            subject: "stat.power_device.POWER",
             payload: "ON",
             expected: UpdateEvent::PlugStateUpdate {
                 device: "power_device".into(),
@@ -86,7 +85,7 @@ fn update_events() {
         },
         TestCase {
             name: "simple off",
-            topic: "stat/power_device/POWER",
+            subject: "stat.power_device.POWER",
             payload: "OFF",
             expected: UpdateEvent::PlugStateUpdate {
                 device: "power_device".into(),
@@ -97,24 +96,24 @@ fn update_events() {
 
     for TestCase {
         name,
-        topic,
+        subject,
         payload,
         expected,
     } in test_cases
     {
-        let event = Publish {
-            dup: false,
-            qos: rumqttc::QoS::AtLeastOnce,
-            retain: false,
-            topic: topic.into(),
-            pkid: 4444,
+        let message = Message {
+            subject: subject.into(),
             payload: payload.into(),
+            length: payload.len(),
+            reply: None,
+            headers: None,
+            status: None,
+            description: None,
         };
 
-        let decoded = UpdateEvent::try_from(event)
+        let decoded = UpdateEvent::try_from(&message)
             .expect(format!("could not decode event in test case '{}'", name).as_str());
 
         assert_eq!(decoded, expected, "in test case '{}'", name);
     }
 }
-*/

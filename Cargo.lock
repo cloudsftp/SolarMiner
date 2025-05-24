@@ -1706,6 +1706,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-nats 0.41.0",
+ "bytes",
  "dotenv",
  "env_logger",
  "futures",

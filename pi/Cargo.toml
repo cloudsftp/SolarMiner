@@ -17,4 +17,5 @@ serde_plain = "1.0.2"
 nats-common = { git = "https://github.com/cloudsftp/nats-common.git", branch = "latest" }
 async-nats = "0.41.0"
 futures = "0.3.31"
+bytes = { version = "1.10.1", features = ["serde"] }
 #nats-common = { path = "../../nats-common" }

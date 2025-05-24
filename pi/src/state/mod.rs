@@ -1,5 +1,6 @@
 use anyhow::{Context, Error, anyhow};
-use async_nats::Message;
+use async_nats::{Message, Subject};
+use bytes::Bytes;
 use itertools::Itertools;
 use log::{debug, info};
 use serde::Deserialize;
@@ -29,59 +30,41 @@ pub struct State {
 
 impl State {
     pub async fn handle_message(mut self, message: Message) -> Result<Self, Error> {
-        match message.subject.as_str() {
-            unknown => debug!(
-                "Received a message on unknown subject {}: {}",
-                unknown,
-                String::from_utf8_lossy(&message.payload),
-            ),
-        }
-
-        /*
-                match event {
-                    Event::Incoming(Packet::Publish(publish)) => {
-                        let decoded = UpdateEvent::try_from(publish)?;
-                        info!("Received event: {:?}", decoded);
-
-                        match decoded {
-                            UpdateEvent::PlugUpdate { device, on } => {
-                                if device != "plug_bitaxe_001" {
-                                    return Err(anyhow!(
-                                        "received power update for unknown device '{}'",
-                                        device,
-                                    ));
-                                }
-
-                                self.plug_power = if on { PowerState::On } else { PowerState::Off }
-                            }
-                            UpdateEvent::EnergyUpdate {
-                                device,
-                                total,
-                                yesterday,
-                                today,
-                            } => {
-                                if device != "plug_bitaxe_001" {
-                                    return Err(anyhow!(
-                                        "received power update for unknown device '{}'",
-                                        device,
-                                    ));
-                                }
-
-                                self.plug_energy = Some(EnergyState {
-                                    total,
-                                    yesterday,
-                                    today,
-                                })
-                            }
-                        };
-                    }
-                    Event::Incoming(Packet::Disconnect) => {
-                        info!("Disconnected");
-                        return Ok(None);
-                    }
-                    _ => (),
+        let update = UpdateEvent::try_from(&message)?;
+        match update {
+            UpdateEvent::PlugStateUpdate { device, on } => {
+                if device != "plug_bitaxe_001" {
+                    return Err(anyhow!(
+                        "received power update for unknown device '{}'",
+                        device,
+                    ));
                 }
-        */
+
+                self.plug_power = if on { PowerState::On } else { PowerState::Off }
+            }
+            UpdateEvent::PlugEnergyUpdate {
+                device,
+                total,
+                yesterday,
+                today,
+            } => {
+                if device != "plug_bitaxe_001" {
+                    return Err(anyhow!(
+                        "received power update for unknown device '{}'",
+                        device,
+                    ));
+                }
+
+                self.plug_energy = Some(EnergyState {
+                    total,
+                    yesterday,
+                    today,
+                })
+            }
+            UpdateEvent::Unknown { subject, payload } => {
+                debug!("Received message on subject '{}'", subject)
+            }
+        };
 
         info!("Updated state: {:?}", self);
         Ok(self)
@@ -108,6 +91,10 @@ pub enum UpdateEvent {
         total: f64,
         yesterday: f64,
         today: f64,
+    },
+    Unknown {
+        subject: Subject,
+        payload: Bytes,
     },
 }
 
@@ -138,10 +125,10 @@ enum CommandResult {
     },
 }
 
-impl TryFrom<Message> for UpdateEvent {
+impl TryFrom<&Message> for UpdateEvent {
     type Error = Error;
 
-    fn try_from(value: Message) -> Result<Self, Self::Error> {
+    fn try_from(value: &Message) -> Result<Self, Self::Error> {
         let device_parts = value.subject.split(".").collect_vec();
 
         Ok(match device_parts.as_slice() {
@@ -184,7 +171,10 @@ impl TryFrom<Message> for UpdateEvent {
                 let on = matches!(plug_update, PowerUpdateValue::On);
                 UpdateEvent::PlugStateUpdate { device, on }
             }
-            _ => todo!(),
+            _ => UpdateEvent::Unknown {
+                subject: value.subject.clone(),
+                payload: value.payload.clone(),
+            },
         })
     }
 }

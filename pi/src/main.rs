@@ -53,7 +53,15 @@ async fn run(config: Config, pi_nats: Client, server_js: Context) -> Result<(), 
     */
 
     // TODO: multiple subscribers: https://natsbyexample.com/examples/messaging/iterating-multiple-subscriptions/rust
-    let mut pi_messages = nats_subscribe(&pi_nats, &["stat.*.RESULT"]).await?;
+    let mut pi_messages = nats_subscribe(
+        &pi_nats,
+        &[
+            "stat.*.RESULT",
+            "solaredge.modbus.battery.battery0",
+            "solaredge.powerflow",
+        ],
+    )
+    .await?;
 
     info!("subscribed to nats");
 
