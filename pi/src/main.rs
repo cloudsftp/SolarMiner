@@ -1,10 +1,10 @@
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::{
-    Client, ConnectOptions,
+    Client, ConnectOptions, Message,
     jetstream::{self, Context},
 };
 use dotenv::dotenv;
-use futures_util::StreamExt;
+use futures::{Stream, StreamExt, future::try_join_all, stream::select_all};
 use log::{debug, error, info};
 use std::env;
 use tokio::signal::unix::{self, SignalKind};
@@ -53,7 +53,9 @@ async fn run(config: Config, pi_nats: Client, server_js: Context) -> Result<(), 
     */
 
     // TODO: multiple subscribers: https://natsbyexample.com/examples/messaging/iterating-multiple-subscriptions/rust
-    let mut pi_messages = pi_nats.subscribe(">").await?;
+    let mut pi_messages = nats_subscribe(&pi_nats, &["stat.*.RESULT"]).await?;
+
+    info!("subscribed to nats");
 
     let mut state = State::default();
     while let Some(message) = pi_messages.next().await {
@@ -65,21 +67,18 @@ async fn run(config: Config, pi_nats: Client, server_js: Context) -> Result<(), 
     Ok(())
 }
 
-fn get_env(key: &str) -> Result<String, Error> {
-    env::var(key).context(format!("could not get value for key '{}'", key))
-}
+async fn nats_subscribe(
+    nats: &Client,
+    subjects: &[&str],
+) -> Result<impl Stream<Item = Message>, Error> {
+    let subscribers = try_join_all(
+        subjects
+            .iter()
+            .map(async |subject| nats.subscribe(subject.to_string()).await),
+    )
+    .await?;
 
-async fn connect_nats_client(prefix: &str) -> Result<Client, Error> {
-    let get_env = |name| get_env(&format!("{}_{}", prefix, name));
-
-    let host = get_env("NATS_HOST")?;
-    let port = get_env("NATS_PORT")?;
-    let options = ConnectOptions::new().token(get_env("NATS_PASSWORD")?);
-
-    options
-        .connect(format!("{}:{}", host, port))
-        .await
-        .context(format!("Could not connect to nats server '{}'", prefix))
+    Ok(select_all(subscribers))
 }
 
 #[tokio::main]
@@ -134,4 +133,21 @@ async fn main() -> Result<(), Error> {
      */
 
     Ok(())
+}
+
+async fn connect_nats_client(prefix: &str) -> Result<Client, Error> {
+    let get_env = |name| get_env(&format!("{}_{}", prefix, name));
+
+    let host = get_env("NATS_HOST")?;
+    let port = get_env("NATS_PORT")?;
+    let options = ConnectOptions::new().token(get_env("NATS_PASSWORD")?);
+
+    options
+        .connect(format!("{}:{}", host, port))
+        .await
+        .context(format!("Could not connect to nats server '{}'", prefix))
+}
+
+fn get_env(key: &str) -> Result<String, Error> {
+    env::var(key).context(format!("could not get value for key '{}'", key))
 }

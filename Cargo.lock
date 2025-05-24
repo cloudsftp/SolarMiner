@@ -1708,7 +1708,7 @@ dependencies = [
  "async-nats 0.41.0",
  "dotenv",
  "env_logger",
- "futures-util",
+ "futures",
  "itertools",
  "log",
  "nats-common",
