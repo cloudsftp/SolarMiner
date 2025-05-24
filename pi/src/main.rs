@@ -1,16 +1,13 @@
-use anyhow::{Context, Error, anyhow};
-use async_nats::ConnectOptions;
+use anyhow::{Context as AnyhowContext, Error};
+use async_nats::{
+    Client, ConnectOptions,
+    jetstream::{self, Context},
+};
 use dotenv::dotenv;
 use futures_util::StreamExt;
 use log::{debug, error, info};
-use nats_common::{
-    MessageStream, connect_jetstream, connect_nats, create_stream, try_pub_sub_subscribe,
-};
-use std::{env, io, time::Duration};
-use tokio::{
-    signal::unix::{self, SignalKind},
-    time::sleep,
-};
+use std::env;
+use tokio::signal::unix::{self, SignalKind};
 
 mod plug;
 mod state;
@@ -39,11 +36,8 @@ impl State {
 }
 */
 
-async fn run(config: Config) -> Result<(), Error> {
+async fn run(config: Config, pi_nats: Client, server_js: Context) -> Result<(), Error> {
     /*
-    let js = connect_jetstream().await;
-    let state_stream = create_stream(&js, &config.state_stream_name).await;
-
     let controller_command_stream =
         create_stream(&js, &config.controller_commands_stream_name).await;
     let mut command_messages: MessageStream =
@@ -58,20 +52,21 @@ async fn run(config: Config) -> Result<(), Error> {
     }
     */
 
-    let pi_host = env::var("PI_NATS_HOST")?;
-    let pi_port = env::var("PI_NATS_PORT")?;
-    let pi_options = ConnectOptions::new().token(env::var("PI_NATS_PASSWORD")?);
+    // TODO: multiple subscribers: https://natsbyexample.com/examples/messaging/iterating-multiple-subscriptions/rust
+    let mut pi_messages = pi_nats.subscribe(">").await?;
 
-    let nats = pi_options
-        .connect(format!("{}:{}", pi_host, pi_port))
-        .await?;
-
-    let mut plug_state_messages = nats.subscribe("stat.plug_bitaxe_001.LOGGING").await?;
-    while let Some(message) = plug_state_messages.next().await {
+    let mut state = State::default();
+    while let Some(message) = pi_messages.next().await {
         debug!("Received message {:?}", message);
+        info!("Topic: {}", message.subject.to_string());
+        state = state.handle_message(message).await?;
     }
 
     Ok(())
+}
+
+fn get_env(key: &str) -> Result<String, Error> {
+    env::var(key).context(format!("could not get value for key '{}'", key))
 }
 
 #[tokio::main]
@@ -79,15 +74,32 @@ async fn main() -> Result<(), Error> {
     env_logger::init();
     dotenv()?;
 
-    let state_stream_name: &str = env::var("STATE_STREAM_NAME")?.leak();
-    let controller_commands_stream_name: &str = env::var("CONTROLLER_COMMANDS_STREAM_NAME")?.leak();
+    let state_stream_name: &str = get_env("STATE_STREAM_NAME")?.leak();
+    let controller_commands_stream_name: &str = get_env("CONTROLLER_COMMANDS_STREAM_NAME")?.leak();
 
     let config = Config {
         state_stream_name,
         controller_commands_stream_name,
     };
 
-    let main_task = tokio::spawn(run(config));
+    let pi_host = get_env("PI_NATS_HOST")?;
+    let pi_port = get_env("PI_NATS_PORT")?;
+    let pi_options = ConnectOptions::new().token(get_env("PI_NATS_PASSWORD")?);
+
+    let pi_nats = pi_options
+        .connect(format!("{}:{}", pi_host, pi_port))
+        .await?;
+
+    let server_host = get_env("SERVER_NATS_HOST")?;
+    let server_port = get_env("SERVER_NATS_PORT")?;
+    let server_options = ConnectOptions::new().token(get_env("SERVER_NATS_PASSWORD")?);
+
+    let server_nats = server_options
+        .connect(format!("{}:{}", server_host, server_port))
+        .await?;
+    let server_js = jetstream::new(server_nats);
+
+    let main_task = tokio::spawn(run(config, pi_nats, server_js)); // TODO: wrap communications in struct, extra thread for sending?
 
     let mut signal_terminate = unix::signal(SignalKind::terminate())?;
     tokio::select! {
@@ -107,32 +119,7 @@ async fn main() -> Result<(), Error> {
         }
     }
 
-    Ok(())
-
     /*
-    let mut mqttoptions = MqttOptions::new("Controller", env::var("MQTT_HOST")?, 1883);
-
-    mqttoptions.set_credentials(env::var("MQTT_USER")?, env::var("MQTT_PASSWORD")?);
-    mqttoptions.set_keep_alive(Duration::from_secs(5));
-
-    let (client, eventloop) = AsyncClient::new(mqttoptions, 10);
-
-    let mut mqttoptions = MqttOptions::new(
-        "Service",
-        env::var("NATS_HOST").context("variable name: NATS_HOST")?,
-        env::var("NATS_PORT")
-            .context("variable name: NATS_PORT")?
-            .parse()
-            .context(format!("variable name: NATS_PORT, value: "))?,
-    );
-
-    if let Ok(token) = env::var("SERVER_TOKEN") {
-        mqttoptions.set_credentials("", token);
-    }
-
-    let (service_client, service_eventloop) = AsyncClient::new(mqttoptions, 10);
-
-    let client_sub = client.clone();
     tokio::spawn(async move {
         client_sub
             .subscribe("stat/+/RESULT", QoS::AtLeastOnce)
@@ -143,19 +130,7 @@ async fn main() -> Result<(), Error> {
         State::run(eventloop).await;
     });
 
-    loop {
-        println!("press button to toggle plug");
-        let _ = io::stdin().read_line(&mut String::new());
-
-        client
-            .publish(
-                "cmnd/plug_bitaxe_001/POWER",
-                QoS::AtLeastOnce,
-                false,
-                "TOGGLE",
-            )
-            .await?;
-        println!("Published message.");
-    }
      */
+
+    Ok(())
 }

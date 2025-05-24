@@ -1,0 +1,17 @@
+{
+  "info": {
+    "manufacturer": "SolarEdge",
+    "model": "SolarEdge Home Battery 9.2kWh",
+    "option": null,
+    "sunspec_type": "Unknown",
+    "version": "48V DCDC 3.5.6",
+    "serialnumber": "7B06F821"
+  },
+  "status": 4,
+  "status_text": "Discharge",
+  "current": 0.11,
+  "voltage": 820.47,
+  "power": -93.0,
+  "state_of_charge": 28.89,
+  "state_of_health": 99.0
+}

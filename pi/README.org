@@ -1,10 +1,19 @@
-* MQTT commands
+* NATS
+** Plug
 
-Subscribe to all topics on MQTT
+listen for results
 
 #+begin_src bash
-mosquitto_sub -h 192.168.0.48 -t "#" -u ${MQTT_USER} -P ${MQTT_PASSWORD} -v
+nats -s 192.168.2.109 --token ${PI_NATS_PASSWORD} sub "stat.*.RESULT"
 #+end_src
+
+toggle
+
+#+begin_src bash
+mosquitto_pub -h 192.168.0.48 -t "cmnd/plug_bitaxe_001/Power" -m "TOGGLE" -u ${MQTT_USER} -P ${MQTT_PASSWORD}
+#+end_src
+
+* MQTT (old)
 
 ** Plug
 *** Power
