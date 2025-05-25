@@ -40,8 +40,10 @@ impl App {
     }
 
     pub fn plug_state_satisfied(&self, on: bool) -> bool {
-        (on && self.state.plug_state == PlugState::On)
-            || (!on && self.state.plug_state == PlugState::Off)
+        matches!(
+            (&self.state.plug_state, on),
+            (PlugState::On, true) | (PlugState::Off, false)
+        )
     }
 
     pub async fn update_state(&mut self, message: &Message) -> Result<(), Error> {

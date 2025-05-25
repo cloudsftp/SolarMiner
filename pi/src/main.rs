@@ -1,10 +1,7 @@
 use anyhow::{Context as AnyhowContext, Error};
-use async_nats::{
-    Client, ConnectOptions, Message,
-    jetstream::{self, Context, stream},
-};
+use async_nats::jetstream::stream;
 use dotenv::dotenv;
-use futures::{Stream, StreamExt, future::try_join_all, stream::select_all};
+use futures::StreamExt;
 use log::{error, info};
 use serde::Deserialize;
 use serde_json::from_reader;
@@ -14,10 +11,9 @@ use tokio::signal::unix::{self, SignalKind};
 mod communication;
 mod state;
 
-use communication::Communication;
-use state::{PlugState, State};
+use communication::{Communication, nats_subscribe};
+use state::State;
 
-// TODO: App in extra module?
 #[derive(Debug)]
 struct App {
     pub config: Config,
@@ -31,6 +27,15 @@ struct Config {
     controller_commands_stream_name: String,
     plug_name: String,
     miner_demand: usize,
+}
+
+impl Config {
+    fn from_file(file_name: &str) -> Result<Self, Error> {
+        let config_file =
+            File::open(file_name).context(format!("Could not open config file '{}'", file_name))?;
+        let config_file = BufReader::new(config_file);
+        from_reader(config_file).context(format!("Could not parse config file '{}'", file_name))
+    }
 }
 
 impl App {
@@ -87,22 +92,26 @@ impl App {
             .publish(format!("cmnd.{}.POWER", self.config.plug_name), payload)
             .await?;
 
-        return Ok(());
+        Ok(())
     }
 }
 
-async fn nats_subscribe(
-    nats: Client,
-    subjects: &[&str],
-) -> Result<impl Stream<Item = Message>, Error> {
-    let subscribers = try_join_all(
-        subjects
-            .iter()
-            .map(async |subject| nats.subscribe(subject.to_string()).await),
-    )
-    .await?;
+impl App {
+    async fn init() -> Result<Self, Error> {
+        let config = Config::from_file("config.json")?;
 
-    Ok(select_all(subscribers))
+        let state = State::default();
+
+        let comm = Communication::connect()
+            .await
+            .context("Could not connect to the communication services")?;
+
+        Ok(App {
+            config,
+            state,
+            comm,
+        })
+    }
 }
 
 #[tokio::main]
@@ -110,24 +119,8 @@ async fn main() -> Result<(), Error> {
     env_logger::init();
     dotenv()?;
 
-    let config_file = File::open("config.json")?;
-    let config = from_reader(BufReader::new(config_file))?;
-
-    let state = State::default();
-
-    let comm = Communication::connect()
-        .await
-        .context("Could not connect to the communication services")?;
-
-    let app = App {
-        config,
-        state,
-        comm,
-    };
-
-    let main_task = tokio::spawn(app.run()); // TODO: wrap communications in struct, extra thread for sending?
-
-    // TODO: second task probing energy periodically (e.g. 1h)
+    let app = App::init().await?;
+    let main_task = tokio::spawn(app.run());
 
     let mut signal_terminate = unix::signal(SignalKind::terminate())?;
     tokio::select! {

@@ -2,9 +2,10 @@ use std::env;
 
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::{
-    Client, ConnectOptions,
+    Client, ConnectOptions, Message,
     jetstream::{self, Context},
 };
+use futures::{Stream, future::try_join_all, stream::select_all};
 
 #[derive(Debug, Clone)]
 pub struct Communication {
@@ -21,6 +22,20 @@ impl Communication {
 
         Ok(Self { pi_nats, server_js })
     }
+}
+
+pub async fn nats_subscribe(
+    nats: Client,
+    subjects: &[&str],
+) -> Result<impl Stream<Item = Message>, Error> {
+    let subscribers = try_join_all(
+        subjects
+            .iter()
+            .map(async |subject| nats.subscribe(subject.to_string()).await),
+    )
+    .await?;
+
+    Ok(select_all(subscribers))
 }
 
 async fn connect_nats_client(prefix: &str) -> Result<Client, Error> {
