@@ -34,6 +34,7 @@ impl Config {
         let config_file =
             File::open(file_name).context(format!("Could not open config file '{}'", file_name))?;
         let config_file = BufReader::new(config_file);
+
         from_reader(config_file).context(format!("Could not parse config file '{}'", file_name))
     }
 }
@@ -68,13 +69,19 @@ impl App {
         // TODO: also listen to
         // - commands
         // - timer for aggregating power data and sending it out
-        // TODO: main loop should never stop, send out error message and continue
         while let Some(message) = pi_messages.next().await {
-            self.update_state(&message).await?;
+            if let Err(err) = self.update_state(&message).await {
+                // TODO: send out error message and continue
+                error!("Errored while updating the state: {}", err);
+                continue;
+            }
 
             // Perform Action TODO: move to extra function
             let on = self.mining_condition();
-            self.flip_plug_switch(on).await?;
+            if let Err(err) = self.flip_plug_switch(on).await {
+                error!("Errored while flipping the miner plug: {}", err);
+                continue;
+            }
         }
 
         Ok(())
