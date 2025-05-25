@@ -5,10 +5,10 @@ use async_nats::{
 };
 use dotenv::dotenv;
 use futures::{Stream, StreamExt, future::try_join_all, stream::select_all};
-use log::{debug, error, info};
+use log::{error, info};
 use serde::Deserialize;
 use serde_json::from_reader;
-use std::{env, fs::File, io::BufReader};
+use std::{fs::File, io::BufReader};
 use tokio::signal::unix::{self, SignalKind};
 
 mod communication;
@@ -45,7 +45,7 @@ impl App {
             .context("Could not create the state stream for the service")?;
 
         let mut pi_messages = nats_subscribe(
-            &self.comm.pi_nats,
+            self.comm.pi_nats.clone(),
             &[
                 "stat.*.RESULT",
                 "solaredge.modbus.battery.battery0",
@@ -60,16 +60,15 @@ impl App {
             .publish(format!("cmnd.{}.Power", self.config.plug_name), "".into())
             .await?;
 
+        // TODO: also listen to
+        // - commands
+        // - timer for aggregating power data and sending it out
+        // TODO: main loop should never stop, send out error message and continue
         while let Some(message) = pi_messages.next().await {
-            self.state = self.state.handle_message(&self.config, &message).await?;
+            self.update_state(&message).await?;
 
             // Perform Action TODO: move to extra function
-
-            let on = self // TODO: wrap condition in method on State
-                .state
-                .production_to_grid
-                .is_some_and(|production| production > self.config.miner_demand);
-
+            let on = self.mining_condition();
             self.flip_plug_switch(on).await?;
         }
 
@@ -77,9 +76,7 @@ impl App {
     }
 
     async fn flip_plug_switch(&self, on: bool) -> Result<(), Error> {
-        if (on && self.state.plug_state == PlugState::On)
-            || (!on && self.state.plug_state == PlugState::Off)
-        {
+        if self.plug_state_satisfied(on) {
             return Ok(());
         }
 
@@ -95,7 +92,7 @@ impl App {
 }
 
 async fn nats_subscribe(
-    nats: &Client,
+    nats: Client,
     subjects: &[&str],
 ) -> Result<impl Stream<Item = Message>, Error> {
     let subscribers = try_join_all(

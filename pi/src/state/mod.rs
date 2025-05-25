@@ -8,7 +8,7 @@ use async_nats::Message;
 use events::UpdateEvent;
 use log::debug;
 
-use crate::Config;
+use crate::App;
 
 #[derive(Debug, PartialEq)]
 pub enum PlugState {
@@ -26,30 +26,36 @@ pub struct EnergyState {
 
 #[derive(Debug)]
 pub struct State {
-    pub plug_state: PlugState,
-    pub plug_energy: Option<EnergyState>,
-    pub production_to_grid: Option<usize>,
-    pub battery_level: Option<f32>,
+    plug_state: PlugState,
+    plug_energy: Option<EnergyState>,
+    production_to_grid: Option<usize>,
+    battery_level: Option<f32>,
 }
 
-impl State {
-    pub async fn handle_message(
-        mut self,
-        config: &Config,
-        message: &Message,
-    ) -> Result<Self, Error> {
-        // Update State
+impl App {
+    pub fn mining_condition(&self) -> bool {
+        self.state
+            .production_to_grid
+            .is_some_and(|production| production > self.config.miner_demand)
+    }
+
+    pub fn plug_state_satisfied(&self, on: bool) -> bool {
+        (on && self.state.plug_state == PlugState::On)
+            || (!on && self.state.plug_state == PlugState::Off)
+    }
+
+    pub async fn update_state(&mut self, message: &Message) -> Result<(), Error> {
         let update = UpdateEvent::try_from(message)?;
         match update {
             UpdateEvent::PlugStateUpdate { device, on } => {
-                if device != config.plug_name {
+                if device != self.config.plug_name {
                     return Err(anyhow!(
                         "received power update for unknown device '{}'",
                         device,
                     ));
                 }
 
-                self.plug_state = if on { PlugState::On } else { PlugState::Off }
+                self.state.plug_state = if on { PlugState::On } else { PlugState::Off }
             }
             UpdateEvent::PlugEnergyUpdate {
                 device,
@@ -57,14 +63,14 @@ impl State {
                 yesterday,
                 today,
             } => {
-                if device != config.plug_name {
+                if device != self.config.plug_name {
                     return Err(anyhow!(
                         "received power update for unknown device '{}'",
                         device,
                     ));
                 }
 
-                self.plug_energy = Some(EnergyState {
+                self.state.plug_energy = Some(EnergyState {
                     total,
                     yesterday,
                     today,
@@ -76,10 +82,10 @@ impl State {
                 grid,
                 battery,
             } => {
-                self.production_to_grid = Some(grid.production);
+                self.state.production_to_grid = Some(grid.production);
             }
             UpdateEvent::BatteryUpdate { level } => {
-                self.battery_level = Some(level);
+                self.state.battery_level = Some(level);
             }
             UpdateEvent::Unknown { subject, payload } => {
                 debug!("Received message on subject '{}'", subject)
@@ -87,8 +93,7 @@ impl State {
         };
 
         debug!("Updated state: {:?}", self);
-
-        Ok(self)
+        Ok(())
     }
 }
 
