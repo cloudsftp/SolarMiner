@@ -8,3 +8,4 @@ config.json
 
 jetstream-data
 timescaledb-data
+influxdb3

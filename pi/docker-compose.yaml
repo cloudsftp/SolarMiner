@@ -22,17 +22,19 @@ services:
       - se2mqtt_mqtt__password
     restart: unless-stopped
 
-  influxdb:
-    image: influxdb:3-core
-    ports:
-      - 8181:8181
-    command:
-      - influxdb3
-      - serve
-      - --node-id=node0
-      - --object-store=file
-      - --data-dir=/var/lib/influxdb3
-    restart: unless-stopped
+#  influxdb:
+#    image: influxdb:3-core
+#    ports:
+#      - 8181:8181
+#    command:
+#      - influxdb3
+#      - serve
+#      - --node-id=main
+#      - --object-store=file
+#      - --data-dir=/var/lib/influxdb3
+#    volumes:
+#      - ./influxdb3:/var/lib/influxdb3
+#    restart: unless-stopped
 
 secrets:
   se2mqtt_mqtt__password:
