@@ -94,7 +94,7 @@ impl App {
             }
         };
 
-        debug!("Updated state: {:?}", self);
+        debug!("Updated state: {:?}", self.state);
         Ok(())
     }
 }

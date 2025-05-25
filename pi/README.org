@@ -18,6 +18,27 @@ nats -s ${PI_NATS_HOST} --token ${PI_NATS_PASSWORD} pub "cmnd.plug_bitaxe_001.Po
 nats -s ${PI_NATS_HOST} --token ${PI_NATS_PASSWORD} pub "cmnd.plug_bitaxe_001.Power" "TOGGLE"
 #+end_src
 
+* Influx DB (not used)
+
+Sadly se2mqtt using influx version 1
+
+** Problem at startup
+
+Permission problems?
+Change owner of data directory
+
+#+begin_src bash
+sudo chown -R 1500:1500 ./influxdb3
+#+end_src
+
+** Authentification
+
+create token
+
+#+begin_src bash
+docker exec -it pi-influxdb-1 influxdb3 create token --admin
+#+end_src
+
 * MQTT (old)
 
 ** Plug
