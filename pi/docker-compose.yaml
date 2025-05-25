@@ -12,6 +12,7 @@ services:
     volumes:
       - ~/jetstream-data:/data/jetstream
       - ./nats.conf:/nats.conf:ro
+    restart: unless-stopped
 
   solaredge:
     image: ghcr.io/deroetzi/solaredge2mqtt:latest
@@ -19,6 +20,7 @@ services:
       - ./.env
     secrets:
       - se2mqtt_mqtt__password
+    restart: unless-stopped
 
   influxdb:
     image: influxdb:3-core
@@ -30,6 +32,7 @@ services:
       - --node-id=node0
       - --object-store=file
       - --data-dir=/var/lib/influxdb3
+    restart: unless-stopped
 
 secrets:
   se2mqtt_mqtt__password:
