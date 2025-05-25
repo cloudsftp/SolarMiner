@@ -52,7 +52,8 @@ func (b *SolarMiner) BuildAndTestAll(
 		return "", err
 	}
 
-	b.BuildImage(ctx, source)
+	b.BuildRustImage(ctx, source, serviceName)
+	b.BuildRustImage(ctx, source, controllerName)
 
 	/*
 		_, err := b.TestIntegration(ctx, source, mittlifeSource)
@@ -79,7 +80,7 @@ func (b *SolarMiner) Build(
 ) *dagger.File {
 	return cachedRustBuilder(source).
 		WithExec([]string{"cargo", "build", "-p", packageName, "--release"}).
-		File("target/release/" + serviceName)
+		File("target/release/" + packageName)
 }
 
 // Runs unit tests

@@ -16,12 +16,17 @@ func (b *SolarMiner) PublishAndDeploy(
 	username *dagger.Secret,
 	key *dagger.Secret,
 ) error {
-	_, err := b.PublishImage(ctx, source, actor, token)
+	_, err := b.PublishRustImage(ctx, source, serviceName, actor, token)
 	if err != nil {
 		return err
 	}
 
-	_, err = b.Deploy(ctx, host, username, key)
+	_, err = b.PublishRustImage(ctx, source, controllerName, actor, token)
+	if err != nil {
+		return err
+	}
+
+	_, err = b.DeployService(ctx, host, username, key)
 	if err != nil {
 		return err
 	}
@@ -29,41 +34,44 @@ func (b *SolarMiner) PublishAndDeploy(
 	return nil
 }
 
-// Publishes the image of the service to the github container registry
-func (b *SolarMiner) PublishImage(
+// Publishes the image of a rust program to the github container registry
+func (b *SolarMiner) PublishRustImage(
 	ctx context.Context,
 	source *dagger.Directory,
+	packageName string,
 	actor string,
 	token *dagger.Secret,
 ) (string, error) {
 	return b.
-		BuildImage(ctx, source).
+		BuildRustImage(ctx, source, packageName).
 		WithRegistryAuth("ghcr.io", actor, token).
-		Publish(ctx, "ghcr.io/cloudsftp/solarminer-service:latest")
+		Publish(ctx, "ghcr.io/cloudsftp/"+packageName+":latest")
 }
 
-// Builds the image of the service
-func (b *SolarMiner) BuildImage(
+// Builds the image of a rust program
+func (b *SolarMiner) BuildRustImage(
 	ctx context.Context,
 	source *dagger.Directory,
+	packageName string,
 ) *dagger.Container {
 	return b.
-		buildBaseImage(source).
-		WithEntrypoint([]string{"/service"})
+		buildBaseImage(source, packageName).
+		WithEntrypoint([]string{"/" + packageName})
 }
 
 func (b *SolarMiner) buildBaseImage(
 	source *dagger.Directory,
+	packageName string,
 ) *dagger.Container {
-	executable := b.Build(source, serviceName)
+	executable := b.Build(source, packageName)
 
 	return dag.Container().
 		From("alpine:"+AlpineVersion).
-		WithFile("/service", executable)
+		WithFile("/"+packageName, executable)
 }
 
 // Deploys the backend of the service
-func (b *SolarMiner) Deploy(
+func (b *SolarMiner) DeployService(
 	ctx context.Context,
 	host *dagger.Secret,
 	username *dagger.Secret,
