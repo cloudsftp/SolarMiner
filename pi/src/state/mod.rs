@@ -4,7 +4,7 @@ mod events;
 mod tests;
 
 use anyhow::{Context as AnyhowContext, Error, anyhow};
-use async_nats::{Client, Message, header::IntoHeaderName, jetstream::Context};
+use async_nats::Message;
 use events::UpdateEvent;
 use log::debug;
 
@@ -26,26 +26,23 @@ pub struct EnergyState {
 
 #[derive(Debug)]
 pub struct State {
-    config: Config,
-    // TODO: comms (pi_nats, server_js)
-    plug_state: PlugState,
-    plug_energy: Option<EnergyState>,
-    production_to_grid: Option<usize>,
-    battery_level: Option<f32>,
+    pub plug_state: PlugState,
+    pub plug_energy: Option<EnergyState>,
+    pub production_to_grid: Option<usize>,
+    pub battery_level: Option<f32>,
 }
 
 impl State {
     pub async fn handle_message(
         mut self,
-        message: Message,
-        pi_nats: &Client,
-        server_js: &Context,
+        config: &Config,
+        message: &Message,
     ) -> Result<Self, Error> {
         // Update State
-        let update = UpdateEvent::try_from(&message)?;
+        let update = UpdateEvent::try_from(message)?;
         match update {
             UpdateEvent::PlugStateUpdate { device, on } => {
-                if device != "plug_bitaxe_001" {
+                if device != config.plug_name {
                     return Err(anyhow!(
                         "received power update for unknown device '{}'",
                         device,
@@ -60,7 +57,7 @@ impl State {
                 yesterday,
                 today,
             } => {
-                if device != "plug_bitaxe_001" {
+                if device != config.plug_name {
                     return Err(anyhow!(
                         "received power update for unknown device '{}'",
                         device,
@@ -91,40 +88,17 @@ impl State {
 
         debug!("Updated state: {:?}", self);
 
-        // Perform Action
-
-        let on = self
-            .production_to_grid
-            .is_some_and(|production| production > self.config.miner_demand);
-
-        self.flip_plug_switch(&pi_nats, on).await?;
-
         Ok(self)
-    }
-
-    async fn flip_plug_switch(&self, pi_nats: &Client, on: bool) -> Result<(), Error> {
-        if (on && self.plug_state == PlugState::On) || (!on && self.plug_state == PlugState::Off) {
-            return Ok(());
-        }
-
-        let payload = if on { "ON" } else { "OFF" }.into();
-
-        pi_nats
-            .publish(format!("cmnd.{}.POWER", self.config.plug_name), payload)
-            .await?;
-
-        return Ok(());
     }
 }
 
-impl State {
-    pub fn new(config: Config) -> Self {
+impl Default for State {
+    fn default() -> Self {
         Self {
-            config,
             plug_state: PlugState::Unknown,
-            plug_energy: None,
-            battery_level: None,
-            production_to_grid: None,
+            plug_energy: Default::default(),
+            production_to_grid: Default::default(),
+            battery_level: Default::default(),
         }
     }
 }
