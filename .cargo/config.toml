@@ -1,0 +1,13 @@
+[target.armv7-unknown-linux-musleabihf]
+linker = "clang"
+rustflags = [
+  "-C", "link-arg=--target=armv7-unknown-linux-musleabihf",
+  "-C", "link-arg=-fuse-ld=lld",
+]
+
+[target.aarch64-unknown-linux-musl]
+linker = "clang"
+rustflags = [
+  "-C", "link-arg=--target=aarch64-unknown-linux-musl",
+  "-C", "link-arg=-fuse-ld=lld",
+]

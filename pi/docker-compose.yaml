@@ -1,6 +1,16 @@
-version: "3.8"
-
 services:
+  controller:
+    image: ghcr.io/cloudsftp/solarminer-controller:latest-arm64
+    volumes:
+      - ./.env:/.env
+      - ./config.json:/config.json
+    depends_on:
+      nats:
+        condition: service_started
+      solaredge:
+        condition: service_started
+    restart: unless-stopped
+
   nats:
     image: nats:latest
     ports:

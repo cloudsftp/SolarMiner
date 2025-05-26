@@ -42,4 +42,3 @@ In server run
 #+begin_src shell
 cargo run
 #+end_src
-

@@ -18,8 +18,37 @@ jobs:
           args: build-and-test-all --source=.
           cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
 
-  deploy:
-    name: Build, publish and deploy backend
+  publish-controller:
+    name: Build and publish the controller
+    runs-on: ubuntu-latest
+
+    needs:
+      - test-and-build
+
+    if: github.event_name == 'push' && contains(github.ref_name, 'latest')
+
+    permissions:
+      packages: write
+      contents: read
+      attestations: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy
+        uses: dagger/dagger-for-github@v6
+        with:
+          version: "latest"
+          verb: call
+          args: publish-controller --source=. --actor=$GITHUB_ACTOR --token=env:GITHUB_TOKEN
+          cloud-token: ${{ secrets.DAGGER_CLOUD_TOKEN }}
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ github.token }}
+
+  deploy-service:
+    name: Build, publish, and deploy the backend service
     runs-on: ubuntu-latest
 
     needs:
