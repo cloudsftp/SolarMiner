@@ -33,7 +33,7 @@ func (b *SolarMiner) BuildRustCrossArm(
 			"cargo", "build", "-p", packageName, "--release",
 			"--target", "armv7-unknown-linux-musleabihf",
 		}).
-		File("target/release/" + packageName)
+		File("target/armv7-unknown-linux-musleabihf/release/" + packageName)
 }
 
 // Runs unit tests for the rust code
