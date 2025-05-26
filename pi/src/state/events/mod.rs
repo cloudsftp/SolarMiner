@@ -108,6 +108,16 @@ enum BatteryStatus {
     TWO = 2,
     THREE = 3,
     Discharging = 4,
+    FIVE = 5,
+    PreserveCharge = 6,
+    /*
+    3: "Charge",
+    4: "Discharge",
+    5: "Fault",
+    6: "Preserve Charge",
+    7: "Idle",
+    10: "Power Saving",
+     */
 }
 
 impl TryFrom<&Message> for UpdateEvent {
