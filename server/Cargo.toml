@@ -7,7 +7,7 @@ edition = "2024"
 dotenv = "0.15.0"
 log = "0.4.27"
 env_logger = "0.11.8"
-reqwest = { version = "0.12.15", features = ["json"] }
+reqwest = { version = "0.12.15", features = ["charset", "http2", "json", "rustls-tls"], default-features = false }
 tokio = { version = "1.45.0", features = ["full"] }
 anyhow = "1.0.98"
 serde = { version = "1.0.219", features = ["derive"] }

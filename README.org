@@ -42,30 +42,3 @@ In server run
 #+begin_src shell
 cargo run
 #+end_src
-
-
-* Cross compiling for Pi
-
-target: =armv7-unknown-linux-musleabihf=
-
-#+begin_src bash
-rustup target add armv7-unknown-linux-musleabihf
-#+end_src
-
-#+begin_src
-cargo build -p solarminer-controller --target armv7-unknown-linux-musleabihf
-#+end_src
-
-** Alpine
-
-#+begin_src bash
-apk add pkgconf openssl-dev
-#+end_src
-
-*** Use clang
-
-#+begin_src
-[target.armv7-unknown-linux-musleabihf]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=lld"]
-#+end_src
