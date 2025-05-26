@@ -6,6 +6,11 @@ import (
 	"context"
 )
 
+const (
+	//RaspberryPiTarget = "aarch64-unknown-linux-musl"
+	RaspberryPiTarget = "armv7-unknown-linux-musleabihf"
+)
+
 // Runs a linter on the rust code
 func (b *SolarMiner) LintRust(ctx context.Context, source *dagger.Directory) (string, error) {
 	return cachedRustBuilder(source).
@@ -31,9 +36,9 @@ func (b *SolarMiner) BuildRustCrossArm(
 	return cachedRustBuilderCrossArm(source).
 		WithExec([]string{
 			"cargo", "build", "-p", packageName, "--release",
-			"--target", "armv7-unknown-linux-musleabihf",
+			"--target", RaspberryPiTarget,
 		}).
-		File("target/armv7-unknown-linux-musleabihf/release/" + packageName)
+		File("target/" + RaspberryPiTarget + "/release/" + packageName)
 }
 
 // Runs unit tests for the rust code
@@ -77,5 +82,5 @@ func cachedRustBuilderCrossArm(
 	source *dagger.Directory,
 ) *dagger.Container {
 	return cachedRustBuilder(source).
-		WithExec([]string{"rustup", "target", "add", "armv7-unknown-linux-musleabihf"})
+		WithExec([]string{"rustup", "target", "add", RaspberryPiTarget})
 }

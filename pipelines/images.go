@@ -14,7 +14,7 @@ func (b *SolarMiner) PublishRustImage(
 	actor string,
 	token *dagger.Secret,
 ) (string, error) {
-	return buildRustDockerImage(executable, packageName).
+	return b.BuildRustDockerImage(executable, packageName).
 		WithRegistryAuth("ghcr.io", actor, token).
 		Publish(ctx, "ghcr.io/cloudsftp/"+packageName+":latest")
 }
@@ -27,16 +27,20 @@ func (b *SolarMiner) PublishRustImageCrossArm(
 	actor string,
 	token *dagger.Secret,
 ) (string, error) {
-	return buildRustDockerImage(executable, packageName).
+	return b.BuildRustDockerImage(executable, packageName).
 		WithRegistryAuth("ghcr.io", actor, token).
-		Publish(ctx, "ghcr.io/cloudsftp/"+packageName+":latest-armv7")
+		Publish(ctx, "ghcr.io/cloudsftp/"+packageName+":latest-armv8")
 }
 
-func buildRustDockerImage(
+func (b *SolarMiner) BuildRustDockerImage(
 	executable *dagger.File,
 	name string,
 ) *dagger.Container {
-	return buildBaseImage(executable, name).
+	return dag.Container(dagger.ContainerOpts{
+		Platform: "arm",
+	}).
+		From("alpine:"+AlpineVersion).
+		WithFile("/"+name, executable).
 		WithEntrypoint([]string{"/" + name})
 }
 

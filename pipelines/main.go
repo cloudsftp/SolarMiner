@@ -39,9 +39,9 @@ func (b *SolarMiner) BuildAndTestAll(
 		return "", err
 	}
 
-	buildRustDockerImage(serviceExecutable, serviceName)
-	buildRustDockerImage(controllerExecutable, controllerName)
-	buildRustDockerImage(controllerExecutableArm, controllerName)
+	b.BuildRustDockerImage(serviceExecutable, serviceName)
+	b.BuildRustDockerImage(controllerExecutable, controllerName)
+	b.BuildRustDockerImage(controllerExecutableArm, controllerName)
 
 	/*
 		_, err := b.TestIntegration(ctx, source, mittlifeSource)
