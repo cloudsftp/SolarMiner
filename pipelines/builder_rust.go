@@ -7,8 +7,7 @@ import (
 )
 
 const (
-	//RaspberryPiTarget = "aarch64-unknown-linux-musl"
-	RaspberryPiTarget = "armv7-unknown-linux-musleabihf"
+	RaspberryPiTarget = "aarch64-unknown-linux-musl"
 )
 
 // Runs a linter on the rust code

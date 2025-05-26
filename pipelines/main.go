@@ -29,19 +29,30 @@ func (b *SolarMiner) BuildAndTestAll(
 		}
 	*/
 
-	serviceExecutable := b.BuildRust(source, serviceName)
-	controllerExecutable := b.BuildRust(source, controllerName)
-	controllerExecutableArm := b.BuildRustCrossArm(source, controllerName)
-	_ = b.BuildRust(source, tuiName)
-
-	_, err := b.TestRust(ctx, source)
+	_, err := b.BuildRust(source, serviceName).Name(ctx)
 	if err != nil {
 		return "", err
 	}
 
-	b.BuildRustDockerImage(serviceExecutable, serviceName)
-	b.BuildRustDockerImage(controllerExecutable, controllerName)
-	b.BuildRustDockerImage(controllerExecutableArm, controllerName)
+	_, err = b.BuildRust(source, controllerName).Name(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = b.BuildRustCrossArm(source, tuiName).Name(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = b.BuildRust(source, tuiName).Name(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = b.TestRust(ctx, source)
+	if err != nil {
+		return "", err
+	}
 
 	/*
 		_, err := b.TestIntegration(ctx, source, mittlifeSource)
