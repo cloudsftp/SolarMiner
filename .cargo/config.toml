@@ -1,0 +1,6 @@
+[target.armv7-unknown-linux-musleabihf]
+linker = "clang"
+rustflags = [
+  "-C", "link-arg=--target=armv7-unknown-linux-musleabihf",
+  "-C", "link-arg=-fuse-ld=lld",
+]

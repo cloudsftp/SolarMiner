@@ -119,3 +119,36 @@ func cachedRustBuilder(
 		WithDirectory("/service", source).
 		WithWorkdir("/service")
 }
+
+func (b *SolarMiner) CrossCompileController(
+	source *dagger.Directory,
+) *dagger.File {
+	return dag.Container().
+		From("rust:"+RustVersion+"-alpine"+AlpineVersion).
+
+		// Openssl
+		WithExec([]string{"apk", "update"}).
+		WithExec([]string{
+			"apk", "add", "--no-cache",
+			"pkgconfig", "musl-dev",
+			"openssl-dev", "openssl-libs-static",
+			"clang", "lld", "perl", "make",
+		}).
+
+		// Clippy
+		//WithExec([]string{"rustup", "component", "add", "clippy"}).
+		WithExec([]string{"rustup", "target", "add", "armv7-unknown-linux-musleabihf"}).
+
+		// Caches
+		//WithMountedCache("/cache/cargo", dag.CacheVolume("rust-packages")).
+		//WithEnvVariable("CARGO_HOME", "/cache/cargo").
+		//WithMountedCache("target", dag.CacheVolume("rust-target")).
+
+		// Source code
+		WithDirectory("/source", source).
+		WithWorkdir("/source").
+		WithEnvVariable("CC", "clang").
+		WithEnvVariable("CFLAGS", "-target armv7-unknown-linux-musleabihf").
+		WithExec([]string{"cargo", "build", "-p", controllerName, "--target", "armv7-unknown-linux-musleabihf"}).
+		File("target/debug/solarminer-controller")
+}

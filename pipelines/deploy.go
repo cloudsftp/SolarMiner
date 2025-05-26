@@ -21,11 +21,6 @@ func (b *SolarMiner) PublishAndDeploy(
 		return err
 	}
 
-	_, err = b.PublishRustImage(ctx, source, controllerName, actor, token)
-	if err != nil {
-		return err
-	}
-
 	_, err = b.DeployService(ctx, host, username, key)
 	if err != nil {
 		return err

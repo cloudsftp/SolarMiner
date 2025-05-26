@@ -1,3 +1,9 @@
+* Deploying
+
+#+begin_src bash
+docker compose up -d
+#+end_src
+
 * NATS
 ** Plug
 *** Listen for results
