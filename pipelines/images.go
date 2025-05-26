@@ -29,7 +29,7 @@ func (b *SolarMiner) PublishRustImageCrossArm(
 ) (string, error) {
 	return b.BuildDockerImageCrossArm(executable, packageName).
 		WithRegistryAuth("ghcr.io", actor, token).
-		Publish(ctx, "ghcr.io/cloudsftp/"+packageName+":arm64")
+		Publish(ctx, "ghcr.io/cloudsftp/"+packageName+":latest-arm64")
 }
 
 func (b *SolarMiner) BuildDockerImage(
