@@ -47,7 +47,7 @@ func (b *SolarMiner) BuildDockerImageCrossArm(
 	name string,
 ) *dagger.Container {
 	return dag.Container(dagger.ContainerOpts{
-		Platform: "arm64",
+		Platform: "linux/arm64/v8",
 	}).
 		From("alpine:"+AlpineVersion).
 		WithFile("/"+name, executable).
