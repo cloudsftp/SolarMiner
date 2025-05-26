@@ -6,42 +6,6 @@ import (
 	"context"
 )
 
-// Publishes the image of a rust program to the github container registry
-func (b *SolarMiner) PublishRustImage(
-	ctx context.Context,
-	source *dagger.Directory,
-	packageName string,
-	actor string,
-	token *dagger.Secret,
-) (string, error) {
-	return b.
-		BuildRustImage(ctx, source, packageName).
-		WithRegistryAuth("ghcr.io", actor, token).
-		Publish(ctx, "ghcr.io/cloudsftp/"+packageName+":latest")
-}
-
-// Builds the image of a rust program
-func (b *SolarMiner) BuildRustImage(
-	ctx context.Context,
-	source *dagger.Directory,
-	packageName string,
-) *dagger.Container {
-	return b.
-		buildBaseImage(source, packageName).
-		WithEntrypoint([]string{"/" + packageName})
-}
-
-func (b *SolarMiner) buildBaseImage(
-	source *dagger.Directory,
-	packageName string,
-) *dagger.Container {
-	executable := b.BuildRust(source, packageName)
-
-	return dag.Container().
-		From("alpine:"+AlpineVersion).
-		WithFile("/"+packageName, executable)
-}
-
 // Deploys the backend of the service
 func (b *SolarMiner) DeployService(
 	ctx context.Context,

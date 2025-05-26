@@ -29,17 +29,19 @@ func (b *SolarMiner) BuildAndTestAll(
 		}
 	*/
 
-	b.BuildRust(source, serviceName)
-	b.BuildRust(source, controllerName)
-	b.BuildRust(source, tuiName)
+	serviceExecutable := b.BuildRust(source, serviceName)
+	controllerExecutable := b.BuildRust(source, controllerName)
+	controllerExecutableArm := b.BuildRustCrossArm(source, controllerName)
+	_ = b.BuildRust(source, tuiName)
 
 	_, err := b.TestRust(ctx, source)
 	if err != nil {
 		return "", err
 	}
 
-	b.BuildRustImage(ctx, source, serviceName)
-	b.BuildRustImage(ctx, source, controllerName)
+	buildRustDockerImage(serviceExecutable, serviceName)
+	buildRustDockerImage(controllerExecutable, controllerName)
+	buildRustDockerImage(controllerExecutableArm, controllerName)
 
 	/*
 		_, err := b.TestIntegration(ctx, source, mittlifeSource)
@@ -52,7 +54,6 @@ func (b *SolarMiner) BuildAndTestAll(
 	return output, nil
 }
 
-// Publishes and deploys the service to the backend
 func (b *SolarMiner) PublishAndDeploy(
 	ctx context.Context,
 	source *dagger.Directory,
@@ -62,12 +63,58 @@ func (b *SolarMiner) PublishAndDeploy(
 	username *dagger.Secret,
 	key *dagger.Secret,
 ) error {
-	_, err := b.PublishRustImage(ctx, source, serviceName, actor, token)
+	err := b.PublishAndDeployService(ctx, source, actor, token, host, username, key)
+	if err != nil {
+		return err
+	}
+
+	err = b.PublishController(ctx, source, actor, token)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Publishes and deploys the service to the backend
+func (b *SolarMiner) PublishAndDeployService(
+	ctx context.Context,
+	source *dagger.Directory,
+	actor string,
+	token *dagger.Secret,
+	host *dagger.Secret,
+	username *dagger.Secret,
+	key *dagger.Secret,
+) error {
+	serviceExecutable := b.BuildRust(source, serviceName)
+	_, err := b.PublishRustImage(ctx, serviceExecutable, serviceName, actor, token)
 	if err != nil {
 		return err
 	}
 
 	_, err = b.DeployService(ctx, host, username, key)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Publishes and deploys the service to the backend
+func (b *SolarMiner) PublishController(
+	ctx context.Context,
+	source *dagger.Directory,
+	actor string,
+	token *dagger.Secret,
+) error {
+	controllerExecutable := b.BuildRust(source, controllerName)
+	_, err := b.PublishRustImage(ctx, controllerExecutable, controllerName, actor, token)
+	if err != nil {
+		return err
+	}
+
+	controllerExecutableArm := b.BuildRustCrossArm(source, controllerName)
+	_, err = b.PublishRustImageCrossArm(ctx, controllerExecutableArm, controllerName, actor, token)
 	if err != nil {
 		return err
 	}

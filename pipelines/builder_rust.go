@@ -6,14 +6,14 @@ import (
 	"context"
 )
 
-// Runs a linter
+// Runs a linter on the rust code
 func (b *SolarMiner) LintRust(ctx context.Context, source *dagger.Directory) (string, error) {
 	return cachedRustBuilder(source).
 		WithExec([]string{"cargo", "clippy", "--", "-D", "warnings"}).
 		Stdout(ctx)
 }
 
-// Builds the service executable
+// Builds the executable of a specified package
 func (b *SolarMiner) BuildRust(
 	source *dagger.Directory,
 	packageName string,
@@ -23,7 +23,20 @@ func (b *SolarMiner) BuildRust(
 		File("target/release/" + packageName)
 }
 
-// Runs unit tests
+// Builds the executable of a specified package for the arm architecture
+func (b *SolarMiner) BuildRustCrossArm(
+	source *dagger.Directory,
+	packageName string,
+) *dagger.File {
+	return cachedRustBuilderCrossArm(source).
+		WithExec([]string{
+			"cargo", "build", "-p", packageName, "--release",
+			"--target", "armv7-unknown-linux-musleabihf",
+		}).
+		File("target/release/" + packageName)
+}
+
+// Runs unit tests for the rust code
 func (b *SolarMiner) TestRust(
 	ctx context.Context,
 	source *dagger.Directory,
@@ -65,13 +78,4 @@ func cachedRustBuilderCrossArm(
 ) *dagger.Container {
 	return cachedRustBuilder(source).
 		WithExec([]string{"rustup", "target", "add", "armv7-unknown-linux-musleabihf"})
-}
-
-func (b *SolarMiner) CrossCompileController(
-	source *dagger.Directory,
-) *dagger.File {
-	return cachedRustBuilder(source).
-		WithExec([]string{"rustup", "target", "add", "armv7-unknown-linux-musleabihf"}).
-		WithExec([]string{"cargo", "build", "-p", controllerName, "--target", "armv7-unknown-linux-musleabihf"}).
-		File("target/debug/solarminer-controller")
 }
