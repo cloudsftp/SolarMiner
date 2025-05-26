@@ -7,16 +7,16 @@ edition = "2024"
 dotenv = "0.15.0"
 log = "0.4.27"
 env_logger = "0.11.8"
-reqwest = { version = "0.11.27", features = ["json", "rustls-tls", "charset", "http2", "system-proxy"], default-features = false }
 tokio = { version = "1.45.0", features = ["full"] }
 anyhow = "1.0.98"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 itertools = "0.14.0"
 serde_plain = "1.0.2"
-nats-common = { git = "https://github.com/cloudsftp/nats-common.git", branch = "latest" }
 async-nats = { version = "0.41.0", features = ["server_2_11"] }
 futures = "0.3.31"
 bytes = { version = "1.10.1", features = ["serde"] }
 serde_repr = "0.1.20"
 #nats-common = { path = "../../nats-common" }
+nats-common = { git = "https://github.com/cloudsftp/nats-common.git", branch = "latest" }
+#reqwest = { version = "0.12.15", features = ["charset", "http2", "json", "rustls-tls"], default-features = false }

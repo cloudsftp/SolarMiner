@@ -148,7 +148,6 @@ func (b *SolarMiner) CrossCompileController(
 		WithDirectory("/source", source).
 		WithWorkdir("/source").
 		WithEnvVariable("CC", "clang").
-		WithEnvVariable("CFLAGS", "-target armv7-unknown-linux-musleabihf").
 		WithExec([]string{"cargo", "build", "-p", controllerName, "--target", "armv7-unknown-linux-musleabihf"}).
 		File("target/debug/solarminer-controller")
 }
