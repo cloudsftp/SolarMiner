@@ -39,7 +39,7 @@ func (b *SolarMiner) BuildAndTestAll(
 		return "", err
 	}
 
-	_, err = b.BuildRustCrossArm(source, tuiName).Name(ctx)
+	_, err = b.BuildRustCrossArm(source, controllerName).Name(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -65,6 +65,7 @@ func (b *SolarMiner) BuildAndTestAll(
 	return output, nil
 }
 
+// Publishes all images and deploys the service to the backend
 func (b *SolarMiner) PublishAndDeploy(
 	ctx context.Context,
 	source *dagger.Directory,
@@ -111,7 +112,7 @@ func (b *SolarMiner) PublishAndDeployService(
 	return nil
 }
 
-// Publishes and deploys the service to the backend
+// Publishes the controller images for both regular and ARM architectures
 func (b *SolarMiner) PublishController(
 	ctx context.Context,
 	source *dagger.Directory,

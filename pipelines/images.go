@@ -27,7 +27,7 @@ func (b *SolarMiner) PublishRustImageCrossArm(
 	actor string,
 	token *dagger.Secret,
 ) (string, error) {
-	return b.BuildDockerImage(executable, packageName).
+	return b.BuildDockerImageCrossArm(executable, packageName).
 		WithRegistryAuth("ghcr.io", actor, token).
 		Publish(ctx, "ghcr.io/cloudsftp/"+packageName+":arm64")
 }
