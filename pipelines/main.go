@@ -23,17 +23,17 @@ func (b *SolarMiner) BuildAndTestAll(
 	source *dagger.Directory,
 ) (string, error) {
 	/*
-		_, err := b.Lint(ctx, source)
+		_, err := b.LintRust(ctx, source)
 		if err != nil {
 			return "", err
 		}
 	*/
 
-	b.Build(source, serviceName)
-	b.Build(source, controllerName)
-	b.Build(source, tuiName)
+	b.BuildRust(source, serviceName)
+	b.BuildRust(source, controllerName)
+	b.BuildRust(source, tuiName)
 
-	_, err := b.Test(ctx, source)
+	_, err := b.TestRust(ctx, source)
 	if err != nil {
 		return "", err
 	}
@@ -52,29 +52,25 @@ func (b *SolarMiner) BuildAndTestAll(
 	return output, nil
 }
 
-// Runs a linter
-func (b *SolarMiner) Lint(ctx context.Context, source *dagger.Directory) (string, error) {
-	return cachedRustBuilder(source).
-		WithExec([]string{"cargo", "clippy", "--", "-D", "warnings"}).
-		Stdout(ctx)
-}
-
-// Builds the service executable
-func (b *SolarMiner) Build(
-	source *dagger.Directory,
-	packageName string,
-) *dagger.File {
-	return cachedRustBuilder(source).
-		WithExec([]string{"cargo", "build", "-p", packageName, "--release"}).
-		File("target/release/" + packageName)
-}
-
-// Runs unit tests
-func (b *SolarMiner) Test(
+// Publishes and deploys the service to the backend
+func (b *SolarMiner) PublishAndDeploy(
 	ctx context.Context,
 	source *dagger.Directory,
-) (string, error) {
-	return cachedRustBuilder(source).
-		WithExec([]string{"cargo", "test"}).
-		Stdout(ctx)
+	actor string,
+	token *dagger.Secret,
+	host *dagger.Secret,
+	username *dagger.Secret,
+	key *dagger.Secret,
+) error {
+	_, err := b.PublishRustImage(ctx, source, serviceName, actor, token)
+	if err != nil {
+		return err
+	}
+
+	_, err = b.DeployService(ctx, host, username, key)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

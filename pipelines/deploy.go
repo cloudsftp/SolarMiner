@@ -6,29 +6,6 @@ import (
 	"context"
 )
 
-// Publishes and deploys the service to the backend
-func (b *SolarMiner) PublishAndDeploy(
-	ctx context.Context,
-	source *dagger.Directory,
-	actor string,
-	token *dagger.Secret,
-	host *dagger.Secret,
-	username *dagger.Secret,
-	key *dagger.Secret,
-) error {
-	_, err := b.PublishRustImage(ctx, source, serviceName, actor, token)
-	if err != nil {
-		return err
-	}
-
-	_, err = b.DeployService(ctx, host, username, key)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 // Publishes the image of a rust program to the github container registry
 func (b *SolarMiner) PublishRustImage(
 	ctx context.Context,
@@ -58,7 +35,7 @@ func (b *SolarMiner) buildBaseImage(
 	source *dagger.Directory,
 	packageName string,
 ) *dagger.Container {
-	executable := b.Build(source, packageName)
+	executable := b.BuildRust(source, packageName)
 
 	return dag.Container().
 		From("alpine:"+AlpineVersion).
