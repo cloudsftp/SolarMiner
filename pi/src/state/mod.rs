@@ -62,10 +62,10 @@ impl App {
         }
     }
 
-    pub fn plug_state_satisfied(&self, on: bool) -> bool {
+    pub fn send_plug_command_condition(&self, on: bool) -> bool {
         matches!(
             (&self.state.plug_state, on),
-            (PlugState::On, true) | (PlugState::Off, false)
+            (PlugState::Unknown, _) | (PlugState::On, true) | (PlugState::Off, false)
         )
     }
 

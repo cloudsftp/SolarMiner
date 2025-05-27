@@ -2,7 +2,7 @@ use anyhow::{Context as AnyhowContext, Error};
 use async_nats::jetstream::stream;
 use dotenv::dotenv;
 use futures::StreamExt;
-use log::{error, info};
+use log::{debug, error, info};
 use serde::Deserialize;
 use serde_json::from_reader;
 use std::{fs::File, io::BufReader};
@@ -88,7 +88,7 @@ impl App {
     }
 
     async fn flip_plug_switch(&self, on: bool) -> Result<(), Error> {
-        if self.plug_state_satisfied(on) {
+        if self.send_plug_command_condition(on) {
             return Ok(());
         }
 
