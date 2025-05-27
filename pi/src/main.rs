@@ -27,6 +27,7 @@ struct Config {
     controller_commands_stream_name: String,
     plug_name: String,
     miner_demand: usize,
+    switch_debounce_duration: u64,
 }
 
 impl Config {
@@ -89,9 +90,7 @@ impl App {
 impl App {
     async fn init() -> Result<Self, Error> {
         let config = Config::from_file("config.json")?;
-
-        let state = State::default();
-
+        let state = State::new(&config);
         let comm = Communication::connect()
             .await
             .context("Could not connect to the communication services")?;

@@ -8,6 +8,8 @@ use std::time::Duration;
 
 use action::DampenedSwitch;
 
+use crate::Config;
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlugState {
     On,
@@ -45,13 +47,13 @@ struct Plug {
     switch: DampenedSwitch,
 }
 
-impl Default for State {
-    fn default() -> Self {
+impl State {
+    pub fn new(config: &Config) -> Self {
         Self {
             plug: Plug {
                 state: PlugState::Unknown,
                 energy: Default::default(),
-                switch: DampenedSwitch::new(Duration::from_secs(15)),
+                switch: DampenedSwitch::new(Duration::from_secs(config.switch_debounce_duration)),
             },
             power: Default::default(),
             battery_level: Default::default(),

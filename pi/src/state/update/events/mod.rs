@@ -147,9 +147,12 @@ impl TryFrom<&Message> for UpdateEvent {
                         total,
                         yesterday,
                         today,
-                    } => {
-                        todo!()
-                    }
+                    } => UpdateEvent::PlugEnergyUpdate {
+                        device: device.to_string(),
+                        total,
+                        yesterday,
+                        today,
+                    },
                 }
             }
             ["stat", _location @ .., device, "POWER"] => {

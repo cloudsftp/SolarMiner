@@ -22,7 +22,10 @@ impl App {
                     ));
                 }
 
-                self.state.plug.state = if on { PlugState::On } else { PlugState::Off }
+                self.state.plug.state = match on {
+                    true => PlugState::On,
+                    false => PlugState::Off,
+                }
             }
             UpdateEvent::PlugEnergyUpdate {
                 device,

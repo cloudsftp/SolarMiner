@@ -77,7 +77,7 @@ impl DampenedSwitch {
             self.received_since = Instant::now();
             false
         } else {
-            self.received_since.duration_since(self.received_since) > self.time_to_switch
+            Instant::now().duration_since(self.received_since) > self.time_to_switch
         }
     }
 }
