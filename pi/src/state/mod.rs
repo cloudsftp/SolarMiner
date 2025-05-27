@@ -6,9 +6,8 @@ mod tests;
 
 use std::time::Duration;
 
-use action::DampenedSwitch;
-
 use crate::Config;
+use action::DampenedSwitch;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlugState {

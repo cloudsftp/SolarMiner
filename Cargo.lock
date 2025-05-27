@@ -1727,6 +1727,7 @@ dependencies = [
  "itertools",
  "log",
  "nats-common",
+ "once_cell",
  "serde",
  "serde_json",
  "serde_plain",

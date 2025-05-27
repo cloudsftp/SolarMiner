@@ -2,7 +2,7 @@ use std::time::{Duration, Instant};
 
 use anyhow::Error;
 
-use crate::App;
+use crate::{App, config};
 
 use super::{PlugState, PowerData};
 
@@ -25,7 +25,7 @@ impl App {
                     > if matches!(self.state.plug.state, PlugState::On) {
                         0
                     } else {
-                        self.config.controller.miner_demand
+                        config.controller.miner_demand
                     }
             }
             _ => false,
@@ -42,7 +42,7 @@ impl App {
         self.comm
             .pi_nats
             .publish(
-                format!("cmnd.{}.POWER", self.config.communication.plug_name),
+                format!("cmnd.{}.POWER", config.communication.plug_name),
                 payload,
             )
             .await?;

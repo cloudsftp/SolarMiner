@@ -4,6 +4,7 @@ use config::Config;
 use dotenv::dotenv;
 use futures::StreamExt;
 use log::{error, info};
+use once_cell::sync::Lazy;
 use tokio::signal::unix::{self, SignalKind};
 
 mod communication;
@@ -15,17 +16,19 @@ use state::State;
 
 #[derive(Debug)]
 struct App {
-    pub config: Config,
     pub state: State,
     pub comm: Communication,
 }
+
+static config: Lazy<Config> =
+    Lazy::new(|| Config::from_file("config.yaml").expect("Could not load config"));
 
 impl App {
     async fn run(mut self) -> Result<(), Error> {
         self.comm
             .server_js
             .create_or_update_stream(stream::Config {
-                name: self.config.communication.state_stream_name.clone(),
+                name: config.communication.state_stream_name.clone(),
                 ..Default::default()
             })
             .await
@@ -45,7 +48,7 @@ impl App {
         self.comm
             .pi_nats
             .publish(
-                format!("cmnd.{}.Power", self.config.communication.plug_name),
+                format!("cmnd.{}.Power", config.communication.plug_name),
                 "".into(),
             )
             .await?;
@@ -72,17 +75,12 @@ impl App {
 
 impl App {
     async fn init() -> Result<Self, Error> {
-        let config = Config::from_file("config.yaml")?;
         let state = State::new(&config);
         let comm = Communication::connect()
             .await
             .context("Could not connect to the communication services")?;
 
-        Ok(App {
-            config,
-            state,
-            comm,
-        })
+        Ok(App { state, comm })
     }
 }
 

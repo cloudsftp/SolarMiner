@@ -6,7 +6,7 @@ use events::UpdateEvent;
 use log::debug;
 
 use crate::{
-    App,
+    App, config,
     state::{EnergyState, PlugState, PowerData},
 };
 
@@ -15,7 +15,7 @@ impl App {
         let update = UpdateEvent::try_from(message)?;
         match update {
             UpdateEvent::PlugStateUpdate { device, on } => {
-                if device != self.config.communication.plug_name {
+                if device != config.communication.plug_name {
                     return Err(anyhow!(
                         "received power update for unknown device '{}'",
                         device,
@@ -33,7 +33,7 @@ impl App {
                 yesterday,
                 today,
             } => {
-                if device != self.config.communication.plug_name {
+                if device != config.communication.plug_name {
                     return Err(anyhow!(
                         "received power update for unknown device '{}'",
                         device,
