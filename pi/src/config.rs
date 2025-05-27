@@ -18,7 +18,10 @@ pub struct CommunicationConfig {
 #[derive(Debug, Deserialize)]
 pub struct ControllerConfig {
     pub miner_demand: usize,
-    pub switch_debounce_duration: u64,
+    pub controller_time: f32,
+    pub switch_debounce_duration: f32,
+    pub battery_low_threshold: f32,
+    pub battery_high_threshold: f32,
 }
 
 impl Config {

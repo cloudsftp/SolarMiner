@@ -1,14 +1,21 @@
+use std::time::Duration;
+
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::jetstream::stream;
 use config::Config;
+use controller::Controller;
 use dotenv::dotenv;
 use futures::StreamExt;
 use log::{error, info};
 use once_cell::sync::Lazy;
-use tokio::signal::unix::{self, SignalKind};
+use tokio::{
+    signal::unix::{self, SignalKind},
+    time::interval,
+};
 
 mod communication;
 mod config;
+mod controller;
 mod state;
 
 use communication::{Communication, nats_subscribe};
@@ -16,8 +23,9 @@ use state::State;
 
 #[derive(Debug)]
 struct App {
-    pub state: State,
-    pub comm: Communication,
+    state: State,
+    controller: Controller,
+    comm: Communication,
 }
 
 static CONFIG: Lazy<Config> =
@@ -53,34 +61,44 @@ impl App {
             )
             .await?;
 
-        // TODO: also listen to
-        // - commands
-        // - timer for aggregating power data and sending it out
-        while let Some(message) = pi_messages.next().await {
-            if let Err(err) = self.update_state(&message).await {
-                // TODO: send out error message and continue
-                error!("Errored while updating the state: {}", err);
-                continue;
-            }
+        let mut controlling_interval =
+            interval(Duration::from_secs_f32(CONFIG.controller.controller_time));
 
-            if let Err(err) = self.perform_control_action().await {
-                error!("Errored while flipping the miner plug: {}", err);
-                continue;
+        // TODO: also listen to
+        // - timer for aggregating power data and sending it out
+        loop {
+            tokio::select! {
+                Some(message) = pi_messages.next() => {
+                    if let Err(err) = self.state.update(&message).await {
+                        // TODO: send out error message and continue
+                        error!("Errored while updating the state: {}", err);
+                        continue;
+                    }
+                }
+                _ = controlling_interval.tick() => {
+                    if let Err(err) = self.controller.perform_action(&self.state, &self.comm).await {
+                        error!("Errored while flipping the miner plug: {}", err);
+                        continue;
+                    }
+                }
             }
         }
-
-        Ok(())
     }
 }
 
 impl App {
     async fn init() -> Result<Self, Error> {
-        let state = State::new(&CONFIG);
+        let state = State::new();
+        let controller = Controller::new();
         let comm = Communication::connect()
             .await
             .context("Could not connect to the communication services")?;
 
-        Ok(App { state, comm })
+        Ok(App {
+            state,
+            controller,
+            comm,
+        })
     }
 }
 

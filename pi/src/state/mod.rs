@@ -1,13 +1,9 @@
-mod action;
 mod update;
 
 #[cfg(test)]
 mod tests;
 
-use std::time::Duration;
-
-use crate::Config;
-use action::DampenedSwitch;
+use crate::CONFIG;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlugState {
@@ -43,21 +39,46 @@ struct PowerData {
 struct Plug {
     state: PlugState,
     energy: Option<EnergyState>,
-    switch: DampenedSwitch,
 }
 
 impl State {
-    pub fn new(config: &Config) -> Self {
+    pub fn new() -> Self {
         Self {
             plug: Plug {
                 state: PlugState::Unknown,
                 energy: Default::default(),
-                switch: DampenedSwitch::new(Duration::from_secs(
-                    config.controller.switch_debounce_duration,
-                )),
             },
             power: Default::default(),
             battery_level: Default::default(),
         }
+    }
+}
+
+impl State {
+    pub fn mining_condition(&self) -> bool {
+        match (self.battery_level, self.power) {
+            (Some(level), _) if level > CONFIG.controller.battery_high_threshold => true,
+            (
+                Some(level),
+                Some(PowerData {
+                    from_pv, to_house, ..
+                }),
+            ) if level > CONFIG.controller.battery_low_threshold => {
+                from_pv - to_house
+                    > if matches!(self.plug.state, PlugState::On) {
+                        0
+                    } else {
+                        CONFIG.controller.miner_demand
+                    }
+            }
+            _ => false,
+        }
+    }
+
+    pub fn skip_plug_command_condition(&self, on: bool) -> bool {
+        matches!(
+            (&self.plug.state, on),
+            (PlugState::Unknown, _) | (PlugState::On, true) | (PlugState::Off, false)
+        )
     }
 }
