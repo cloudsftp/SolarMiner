@@ -19,7 +19,7 @@ pub struct CommunicationConfig {
 pub struct ControllerConfig {
     pub controller_time: f32,
     pub miner_demand: usize,
-    pub switch_debounce_duration: u64,
+    pub switch_debounce_duration: f32,
 }
 
 impl Config {
