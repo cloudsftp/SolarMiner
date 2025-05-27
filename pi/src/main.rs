@@ -2,7 +2,7 @@ use anyhow::{Context as AnyhowContext, Error};
 use async_nats::jetstream::stream;
 use dotenv::dotenv;
 use futures::StreamExt;
-use log::{debug, error, info};
+use log::{error, info};
 use serde::Deserialize;
 use serde_json::from_reader;
 use std::{fs::File, io::BufReader};
@@ -76,28 +76,11 @@ impl App {
                 continue;
             }
 
-            // Perform Action TODO: move to extra function
-            let on = self.mining_condition();
-            if let Err(err) = self.flip_plug_switch(on).await {
+            if let Err(err) = self.perform_control_action().await {
                 error!("Errored while flipping the miner plug: {}", err);
                 continue;
             }
         }
-
-        Ok(())
-    }
-
-    async fn flip_plug_switch(&self, on: bool) -> Result<(), Error> {
-        if self.send_plug_command_condition(on) {
-            return Ok(());
-        }
-
-        let payload = if on { "ON" } else { "OFF" }.into();
-
-        self.comm
-            .pi_nats
-            .publish(format!("cmnd.{}.POWER", self.config.plug_name), payload)
-            .await?;
 
         Ok(())
     }

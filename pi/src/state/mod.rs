@@ -1,14 +1,12 @@
-mod events;
+mod action;
+mod update;
 
 #[cfg(test)]
 mod tests;
 
-use anyhow::{Context as AnyhowContext, Error, anyhow};
-use async_nats::Message;
-use events::UpdateEvent;
-use log::debug;
+use std::time::Duration;
 
-use crate::App;
+use action::DampenedSwitch;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlugState {
@@ -26,8 +24,7 @@ pub struct EnergyState {
 
 #[derive(Debug)]
 pub struct State {
-    plug_state: PlugState,
-    plug_energy: Option<EnergyState>,
+    plug: Plug,
     power: Option<PowerData>,
     battery_level: Option<f32>,
 }
@@ -41,98 +38,21 @@ struct PowerData {
     to_grid: usize,
 }
 
-impl App {
-    pub fn mining_condition(&self) -> bool {
-        match (self.state.battery_level, self.state.power) {
-            (Some(level), _) if level > 30. => true,
-            (
-                Some(level),
-                Some(PowerData {
-                    from_pv, to_house, ..
-                }),
-            ) if level > 10. => {
-                from_pv - to_house
-                    > if matches!(self.state.plug_state, PlugState::On) {
-                        0
-                    } else {
-                        self.config.miner_demand
-                    }
-            }
-            _ => false,
-        }
-    }
-
-    pub fn send_plug_command_condition(&self, on: bool) -> bool {
-        matches!(
-            (&self.state.plug_state, on),
-            (PlugState::Unknown, _) | (PlugState::On, true) | (PlugState::Off, false)
-        )
-    }
-
-    pub async fn update_state(&mut self, message: &Message) -> Result<(), Error> {
-        let update = UpdateEvent::try_from(message)?;
-        match update {
-            UpdateEvent::PlugStateUpdate { device, on } => {
-                if device != self.config.plug_name {
-                    return Err(anyhow!(
-                        "received power update for unknown device '{}'",
-                        device,
-                    ));
-                }
-
-                self.state.plug_state = if on { PlugState::On } else { PlugState::Off }
-            }
-            UpdateEvent::PlugEnergyUpdate {
-                device,
-                total,
-                yesterday,
-                today,
-            } => {
-                if device != self.config.plug_name {
-                    return Err(anyhow!(
-                        "received power update for unknown device '{}'",
-                        device,
-                    ));
-                }
-
-                self.state.plug_energy = Some(EnergyState {
-                    total,
-                    yesterday,
-                    today,
-                })
-            }
-            UpdateEvent::PowerUpdate {
-                pv_production,
-                house_demand,
-                grid,
-                battery,
-            } => {
-                self.state.power = Some(PowerData {
-                    from_grid: grid.demand,
-                    from_pv: pv_production,
-                    to_house: house_demand,
-                    to_battery: battery.demand,
-                    to_grid: grid.production,
-                });
-            }
-            UpdateEvent::BatteryUpdate { level } => {
-                self.state.battery_level = Some(level);
-            }
-            UpdateEvent::Unknown { subject, payload } => {
-                debug!("Received message on subject '{}'", subject)
-            }
-        };
-
-        debug!("Updated state: {:?}", self.state);
-        Ok(())
-    }
+#[derive(Debug)]
+struct Plug {
+    state: PlugState,
+    energy: Option<EnergyState>,
+    switch: DampenedSwitch,
 }
 
 impl Default for State {
     fn default() -> Self {
         Self {
-            plug_state: PlugState::Unknown,
-            plug_energy: Default::default(),
+            plug: Plug {
+                state: PlugState::Unknown,
+                energy: Default::default(),
+                switch: DampenedSwitch::new(Duration::from_secs(15)),
+            },
             power: Default::default(),
             battery_level: Default::default(),
         }
