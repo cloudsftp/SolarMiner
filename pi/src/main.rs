@@ -61,15 +61,11 @@ impl App {
             )
             .await?;
 
-        // TODO: also listen to
-        // - commands (nats)
-        // - timer for controlling
-        // - timer for aggregating power data and sending it out
-        //
-
         let mut controlling_interval =
             interval(Duration::from_secs_f32(CONFIG.controller.controller_time));
 
+        // TODO: also listen to
+        // - timer for aggregating power data and sending it out
         loop {
             tokio::select! {
                 Some(message) = pi_messages.next() => {

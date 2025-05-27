@@ -3,10 +3,7 @@ mod update;
 #[cfg(test)]
 mod tests;
 
-use std::time::Duration;
-
-use crate::{CONFIG, Config, communication::Communication};
-use anyhow::Error;
+use crate::CONFIG;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum PlugState {
@@ -60,13 +57,13 @@ impl State {
 impl State {
     pub fn mining_condition(&self) -> bool {
         match (self.battery_level, self.power) {
-            (Some(level), _) if level > 30. => true,
+            (Some(level), _) if level > CONFIG.controller.battery_high_threshold => true,
             (
                 Some(level),
                 Some(PowerData {
                     from_pv, to_house, ..
                 }),
-            ) if level > 10. => {
+            ) if level > CONFIG.controller.battery_low_threshold => {
                 from_pv - to_house
                     > if matches!(self.plug.state, PlugState::On) {
                         0
@@ -78,24 +75,7 @@ impl State {
         }
     }
 
-    pub async fn flip_plug_switch(&self, on: bool, comm: &Communication) -> Result<(), Error> {
-        if self.send_plug_command_condition(on) {
-            return Ok(());
-        }
-
-        let payload = if on { "ON" } else { "OFF" }.into();
-
-        comm.pi_nats
-            .publish(
-                format!("cmnd.{}.POWER", CONFIG.communication.plug_name),
-                payload,
-            )
-            .await?;
-
-        Ok(())
-    }
-
-    fn send_plug_command_condition(&self, on: bool) -> bool {
+    pub fn skip_plug_command_condition(&self, on: bool) -> bool {
         matches!(
             (&self.plug.state, on),
             (PlugState::Unknown, _) | (PlugState::On, true) | (PlugState::Off, false)
