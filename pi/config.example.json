@@ -1,7 +1,0 @@
-{
-    "state_stream_name": "controller_state",
-    "controller_commands_stream_name": "controller_commands",
-    "plug_name": "plug_bitaxe_001",
-    "miner_demand": 30,
-    "switch_debounce_duration": 30
-}

@@ -1,14 +1,13 @@
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::jetstream::stream;
+use config::Config;
 use dotenv::dotenv;
 use futures::StreamExt;
 use log::{error, info};
-use serde::Deserialize;
-use serde_json::from_reader;
-use std::{fs::File, io::BufReader};
 use tokio::signal::unix::{self, SignalKind};
 
 mod communication;
+mod config;
 mod state;
 
 use communication::{Communication, nats_subscribe};
@@ -21,31 +20,12 @@ struct App {
     pub comm: Communication,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-struct Config {
-    state_stream_name: String,
-    controller_commands_stream_name: String,
-    plug_name: String,
-    miner_demand: usize,
-    switch_debounce_duration: u64,
-}
-
-impl Config {
-    fn from_file(file_name: &str) -> Result<Self, Error> {
-        let config_file =
-            File::open(file_name).context(format!("Could not open config file '{}'", file_name))?;
-        let config_file = BufReader::new(config_file);
-
-        from_reader(config_file).context(format!("Could not parse config file '{}'", file_name))
-    }
-}
-
 impl App {
     async fn run(mut self) -> Result<(), Error> {
         self.comm
             .server_js
             .create_or_update_stream(stream::Config {
-                name: self.config.state_stream_name.clone(),
+                name: self.config.communication.state_stream_name.clone(),
                 ..Default::default()
             })
             .await
@@ -64,7 +44,10 @@ impl App {
 
         self.comm
             .pi_nats
-            .publish(format!("cmnd.{}.Power", self.config.plug_name), "".into())
+            .publish(
+                format!("cmnd.{}.Power", self.config.communication.plug_name),
+                "".into(),
+            )
             .await?;
 
         // TODO: also listen to
@@ -89,7 +72,7 @@ impl App {
 
 impl App {
     async fn init() -> Result<Self, Error> {
-        let config = Config::from_file("config.json")?;
+        let config = Config::from_file("config.yaml")?;
         let state = State::new(&config);
         let comm = Communication::connect()
             .await

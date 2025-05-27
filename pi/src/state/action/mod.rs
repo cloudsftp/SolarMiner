@@ -25,7 +25,7 @@ impl App {
                     > if matches!(self.state.plug.state, PlugState::On) {
                         0
                     } else {
-                        self.config.miner_demand
+                        self.config.controller.miner_demand
                     }
             }
             _ => false,
@@ -41,7 +41,10 @@ impl App {
 
         self.comm
             .pi_nats
-            .publish(format!("cmnd.{}.POWER", self.config.plug_name), payload)
+            .publish(
+                format!("cmnd.{}.POWER", self.config.communication.plug_name),
+                payload,
+            )
             .await?;
 
         Ok(())

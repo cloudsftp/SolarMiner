@@ -15,7 +15,7 @@ impl App {
         let update = UpdateEvent::try_from(message)?;
         match update {
             UpdateEvent::PlugStateUpdate { device, on } => {
-                if device != self.config.plug_name {
+                if device != self.config.communication.plug_name {
                     return Err(anyhow!(
                         "received power update for unknown device '{}'",
                         device,
@@ -33,7 +33,7 @@ impl App {
                 yesterday,
                 today,
             } => {
-                if device != self.config.plug_name {
+                if device != self.config.communication.plug_name {
                     return Err(anyhow!(
                         "received power update for unknown device '{}'",
                         device,

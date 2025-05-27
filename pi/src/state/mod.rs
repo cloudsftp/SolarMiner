@@ -53,7 +53,9 @@ impl State {
             plug: Plug {
                 state: PlugState::Unknown,
                 energy: Default::default(),
-                switch: DampenedSwitch::new(Duration::from_secs(config.switch_debounce_duration)),
+                switch: DampenedSwitch::new(Duration::from_secs(
+                    config.controller.switch_debounce_duration,
+                )),
             },
             power: Default::default(),
             battery_level: Default::default(),
