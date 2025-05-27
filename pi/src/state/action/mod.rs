@@ -6,23 +6,6 @@ use crate::App;
 
 use super::{PlugState, PowerData};
 
-#[derive(Debug)]
-pub struct DampenedSwitch {
-    time_to_switch: Duration,
-    command: bool,
-    received_since: Instant,
-}
-
-impl DampenedSwitch {
-    pub fn new(time_to_switch: Duration) -> Self {
-        Self {
-            time_to_switch,
-            command: false,
-            received_since: Instant::now(),
-        }
-    }
-}
-
 impl App {
     pub async fn perform_control_action(&mut self) -> Result<(), Error> {
         let on = self.mining_condition();
@@ -49,8 +32,8 @@ impl App {
         }
     }
 
-    async fn flip_plug_switch(&self, on: bool) -> Result<(), Error> {
-        if self.send_plug_command_condition(on) {
+    async fn flip_plug_switch(&mut self, on: bool) -> Result<(), Error> {
+        if !self.state.plug.switch.perform(on) || self.send_plug_command_condition(on) {
             return Ok(());
         }
 
@@ -69,5 +52,32 @@ impl App {
             (&self.state.plug.state, on),
             (PlugState::Unknown, _) | (PlugState::On, true) | (PlugState::Off, false)
         )
+    }
+}
+
+#[derive(Debug)]
+pub struct DampenedSwitch {
+    time_to_switch: Duration,
+    command: bool,
+    received_since: Instant,
+}
+
+impl DampenedSwitch {
+    pub fn new(time_to_switch: Duration) -> Self {
+        Self {
+            time_to_switch,
+            command: false,
+            received_since: Instant::now(),
+        }
+    }
+
+    fn perform(&mut self, command: bool) -> bool {
+        if command != self.command {
+            self.command = command;
+            self.received_since = Instant::now();
+            false
+        } else {
+            self.received_since.duration_since(self.received_since) > self.time_to_switch
+        }
     }
 }
