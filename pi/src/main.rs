@@ -3,6 +3,7 @@ use std::time::Duration;
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::jetstream::stream;
 use config::Config;
+use controller::Controller;
 use dotenv::dotenv;
 use futures::StreamExt;
 use log::{error, info};
@@ -14,6 +15,7 @@ use tokio::{
 
 mod communication;
 mod config;
+mod controller;
 mod state;
 
 use communication::{Communication, nats_subscribe};
@@ -22,6 +24,7 @@ use state::State;
 #[derive(Debug)]
 struct App {
     state: State,
+    controller: Controller,
     comm: Communication,
 }
 
