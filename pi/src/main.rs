@@ -21,8 +21,8 @@ use state::State;
 
 #[derive(Debug)]
 struct App {
-    pub state: State,
-    pub comm: Communication,
+    state: State,
+    comm: Communication,
 }
 
 static CONFIG: Lazy<Config> =
@@ -64,16 +64,19 @@ impl App {
         // - timer for aggregating power data and sending it out
         //
 
-        let sending_interval = interval(Duration::from_secs_f32(CONFIG.controller.controller_time));
+        let mut controlling_interval =
+            interval(Duration::from_secs_f32(CONFIG.controller.controller_time));
+
         loop {
             tokio::select! {
                 Some(message) = pi_messages.next() => {
-                    if let Err(err) = self.update_state(&message).await {
+                    if let Err(err) = self.state.update(&message).await {
                         // TODO: send out error message and continue
                         error!("Errored while updating the state: {}", err);
                         continue;
                     }
-
+                }
+                _ = controlling_interval.tick() => {
                     if let Err(err) = self.perform_control_action().await {
                         error!("Errored while flipping the miner plug: {}", err);
                         continue;

@@ -6,12 +6,12 @@ use events::UpdateEvent;
 use log::debug;
 
 use crate::{
-    App, CONFIG,
-    state::{EnergyState, PlugState, PowerData},
+    CONFIG,
+    state::{EnergyState, PlugState, PowerData, State},
 };
 
-impl App {
-    pub async fn update_state(&mut self, message: &Message) -> Result<(), Error> {
+impl State {
+    pub async fn update(&mut self, message: &Message) -> Result<(), Error> {
         let update = UpdateEvent::try_from(message)?;
         match update {
             UpdateEvent::PlugStateUpdate { device, on } => {
@@ -22,7 +22,7 @@ impl App {
                     ));
                 }
 
-                self.state.plug.state = match on {
+                self.plug.state = match on {
                     true => PlugState::On,
                     false => PlugState::Off,
                 }
@@ -40,7 +40,7 @@ impl App {
                     ));
                 }
 
-                self.state.plug.energy = Some(EnergyState {
+                self.plug.energy = Some(EnergyState {
                     total,
                     yesterday,
                     today,
@@ -52,7 +52,7 @@ impl App {
                 grid,
                 battery,
             } => {
-                self.state.power = Some(PowerData {
+                self.power = Some(PowerData {
                     from_grid: grid.demand,
                     from_pv: pv_production,
                     to_house: house_demand,
@@ -61,7 +61,7 @@ impl App {
                 });
             }
             UpdateEvent::BatteryUpdate { level } => {
-                self.state.battery_level = Some(level);
+                self.battery_level = Some(level);
             }
             UpdateEvent::Unknown { subject, payload } => {
                 debug!(
@@ -72,7 +72,7 @@ impl App {
             }
         };
 
-        debug!("Updated state: {:?}", self.state);
+        debug!("Updated state: {:?}", self);
         Ok(())
     }
 }
