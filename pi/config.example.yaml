@@ -4,5 +4,6 @@ communication:
     plug_name: plug_bitaxe_001
 
 controller:
+    controller_time: 5.1
     miner_demand: 30
     switch_debounce_duration: 30

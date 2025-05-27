@@ -17,6 +17,7 @@ pub struct CommunicationConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct ControllerConfig {
+    pub controller_time: f32,
     pub miner_demand: usize,
     pub switch_debounce_duration: u64,
 }

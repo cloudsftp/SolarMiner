@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::jetstream::stream;
 use config::Config;
@@ -5,7 +7,10 @@ use dotenv::dotenv;
 use futures::StreamExt;
 use log::{error, info};
 use once_cell::sync::Lazy;
-use tokio::signal::unix::{self, SignalKind};
+use tokio::{
+    signal::unix::{self, SignalKind},
+    time::interval,
+};
 
 mod communication;
 mod config;
@@ -54,22 +59,28 @@ impl App {
             .await?;
 
         // TODO: also listen to
-        // - commands
+        // - commands (nats)
+        // - timer for controlling
         // - timer for aggregating power data and sending it out
-        while let Some(message) = pi_messages.next().await {
-            if let Err(err) = self.update_state(&message).await {
-                // TODO: send out error message and continue
-                error!("Errored while updating the state: {}", err);
-                continue;
-            }
+        //
 
-            if let Err(err) = self.perform_control_action().await {
-                error!("Errored while flipping the miner plug: {}", err);
-                continue;
+        let sending_interval = interval(Duration::from_secs_f32(CONFIG.controller.controller_time));
+        loop {
+            tokio::select! {
+                Some(message) = pi_messages.next() => {
+                    if let Err(err) = self.update_state(&message).await {
+                        // TODO: send out error message and continue
+                        error!("Errored while updating the state: {}", err);
+                        continue;
+                    }
+
+                    if let Err(err) = self.perform_control_action().await {
+                        error!("Errored while flipping the miner plug: {}", err);
+                        continue;
+                    }
+                }
             }
         }
-
-        Ok(())
     }
 }
 
