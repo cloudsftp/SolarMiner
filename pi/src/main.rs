@@ -20,7 +20,7 @@ struct App {
     pub comm: Communication,
 }
 
-static config: Lazy<Config> =
+static CONFIG: Lazy<Config> =
     Lazy::new(|| Config::from_file("config.yaml").expect("Could not load config"));
 
 impl App {
@@ -28,7 +28,7 @@ impl App {
         self.comm
             .server_js
             .create_or_update_stream(stream::Config {
-                name: config.communication.state_stream_name.clone(),
+                name: CONFIG.communication.state_stream_name.clone(),
                 ..Default::default()
             })
             .await
@@ -48,7 +48,7 @@ impl App {
         self.comm
             .pi_nats
             .publish(
-                format!("cmnd.{}.Power", config.communication.plug_name),
+                format!("cmnd.{}.Power", CONFIG.communication.plug_name),
                 "".into(),
             )
             .await?;
@@ -75,7 +75,7 @@ impl App {
 
 impl App {
     async fn init() -> Result<Self, Error> {
-        let state = State::new(&config);
+        let state = State::new(&CONFIG);
         let comm = Communication::connect()
             .await
             .context("Could not connect to the communication services")?;
