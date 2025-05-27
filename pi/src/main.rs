@@ -27,6 +27,7 @@ struct Config {
     controller_commands_stream_name: String,
     plug_name: String,
     miner_demand: usize,
+    switch_debounce_duration: u64,
 }
 
 impl Config {
@@ -76,28 +77,11 @@ impl App {
                 continue;
             }
 
-            // Perform Action TODO: move to extra function
-            let on = self.mining_condition();
-            if let Err(err) = self.flip_plug_switch(on).await {
+            if let Err(err) = self.perform_control_action().await {
                 error!("Errored while flipping the miner plug: {}", err);
                 continue;
             }
         }
-
-        Ok(())
-    }
-
-    async fn flip_plug_switch(&self, on: bool) -> Result<(), Error> {
-        if self.plug_state_satisfied(on) {
-            return Ok(());
-        }
-
-        let payload = if on { "ON" } else { "OFF" }.into();
-
-        self.comm
-            .pi_nats
-            .publish(format!("cmnd.{}.POWER", self.config.plug_name), payload)
-            .await?;
 
         Ok(())
     }
@@ -106,9 +90,7 @@ impl App {
 impl App {
     async fn init() -> Result<Self, Error> {
         let config = Config::from_file("config.json")?;
-
-        let state = State::default();
-
+        let state = State::new(&config);
         let comm = Communication::connect()
             .await
             .context("Could not connect to the communication services")?;
