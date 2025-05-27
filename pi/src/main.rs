@@ -80,7 +80,7 @@ impl App {
                     }
                 }
                 _ = controlling_interval.tick() => {
-                    if let Err(err) = self.perform_control_action().await {
+                    if let Err(err) = self.controller.perform_action(&self.state, &self.comm).await {
                         error!("Errored while flipping the miner plug: {}", err);
                         continue;
                     }
@@ -92,12 +92,17 @@ impl App {
 
 impl App {
     async fn init() -> Result<Self, Error> {
-        let state = State::new(&CONFIG);
+        let state = State::new();
+        let controller = Controller::new();
         let comm = Communication::connect()
             .await
             .context("Could not connect to the communication services")?;
 
-        Ok(App { state, comm })
+        Ok(App {
+            state,
+            controller,
+            comm,
+        })
     }
 }
 
