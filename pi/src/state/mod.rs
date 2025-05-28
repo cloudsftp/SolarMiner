@@ -28,8 +28,9 @@ pub struct State {
 
 #[derive(Debug, Clone, Copy)]
 struct PowerData {
-    from_grid: usize,
     from_pv: usize,
+    from_battery: usize,
+    from_grid: usize,
     to_house: usize,
     to_battery: usize,
     to_grid: usize,
@@ -75,7 +76,7 @@ impl State {
         }
     }
 
-    pub fn skip_plug_command_condition(&self, on: bool) -> bool {
+    pub fn should_skip_send_plug_command(&self, on: bool) -> bool {
         matches!(
             (&self.plug.state, on),
             (PlugState::Unknown, _) | (PlugState::On, true) | (PlugState::Off, false)

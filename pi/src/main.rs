@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use anyhow::{Context as AnyhowContext, Error};
-use async_nats::jetstream::stream;
 use config::Config;
 use controller::Controller;
 use dotenv::dotenv;
@@ -18,41 +17,22 @@ mod config;
 mod controller;
 mod state;
 
-use communication::{Communication, nats_subscribe};
+use communication::Communication;
 use state::State;
 
 #[derive(Debug)]
 struct App {
     state: State,
     controller: Controller,
-    comm: Communication,
 }
 
 static CONFIG: Lazy<Config> =
     Lazy::new(|| Config::from_file("config.yaml").expect("Could not load config"));
 
 impl App {
-    async fn run(mut self) -> Result<(), Error> {
-        self.comm
-            .server_js
-            .create_or_update_stream(stream::Config {
-                name: CONFIG.communication.state_stream_name.clone(),
-                ..Default::default()
-            })
-            .await
-            .context("Could not create the state stream for the service")?;
-
-        let mut pi_messages = nats_subscribe(
-            self.comm.pi_nats.clone(),
-            &[
-                "stat.*.RESULT",
-                "stat.*.STATUS8",
-                "solaredge.modbus.battery.battery0",
-                "solaredge.powerflow",
-            ],
-        )
-        .await
-        .context("Could not subscribe to the subjects on the controller")?;
+    async fn run(mut self, comm: Communication) -> Result<(), Error> {
+        comm.create_service_streams().await?;
+        let mut pi_messages = comm.subscribe_to_smart_home().await?;
 
         let mut controlling_interval = interval_at(
             Instant::now()
@@ -79,13 +59,13 @@ impl App {
                     }
                 }
                 _ = controlling_interval.tick() => {
-                    if let Err(err) = self.controller.perform_action(&self.state, &self.comm).await {
+                    if let Err(err) = self.controller.perform_action(&self.state, &comm).await {
                         error!("Errored while flipping the miner plug: {}", err);
                         continue;
                     }
                 }
                 _ = sensor_data_update_interval.tick() => {
-                    if let Err(err) = self.comm.query_plug_state().await {
+                    if let Err(err) = comm.query_plug_state().await {
                         error!("Errored while querying the plug state: {}", err);
                         continue;
                     }
@@ -96,18 +76,11 @@ impl App {
 }
 
 impl App {
-    async fn init() -> Result<Self, Error> {
-        let state = State::new();
-        let controller = Controller::new();
-        let comm = Communication::connect()
-            .await
-            .context("Could not connect to the communication services")?;
-
-        Ok(App {
-            state,
-            controller,
-            comm,
-        })
+    fn new() -> Self {
+        App {
+            state: State::new(),
+            controller: Controller::new(),
+        }
     }
 }
 
@@ -116,8 +89,12 @@ async fn main() -> Result<(), Error> {
     env_logger::init();
     dotenv()?;
 
-    let app = App::init().await?;
-    let main_task = tokio::spawn(app.run());
+    let comm = Communication::connect()
+        .await
+        .context("Could not connect to the communication services")?;
+
+    let app = App::new();
+    let main_task = tokio::spawn(app.run(comm));
 
     let mut signal_terminate = unix::signal(SignalKind::terminate())?;
     tokio::select! {

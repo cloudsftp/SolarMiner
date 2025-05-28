@@ -53,8 +53,9 @@ impl State {
                 battery,
             } => {
                 self.power = Some(PowerData {
-                    from_grid: grid.demand,
                     from_pv: pv_production,
+                    from_battery: battery.production,
+                    from_grid: grid.demand,
                     to_house: house_demand,
                     to_battery: battery.demand,
                     to_grid: grid.production,
