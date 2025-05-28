@@ -9,7 +9,7 @@ use crate::{
 };
 
 impl State {
-    pub async fn update(&mut self, message: &Message) -> Result<(), Error> {
+    pub async fn handle_message(&mut self, message: &Message) -> Result<(), Error> {
         let update = UpdateEvent::try_from(message)?;
         match update {
             UpdateEvent::PlugStateUpdate { device, on } => {

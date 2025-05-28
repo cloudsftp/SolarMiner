@@ -9,7 +9,7 @@ use log::{error, info};
 use once_cell::sync::Lazy;
 use tokio::{
     signal::unix::{self, SignalKind},
-    time::{Instant, interval, interval_at},
+    time::{Instant, MissedTickBehavior, interval, interval_at},
 };
 
 mod communication;
@@ -34,41 +34,67 @@ impl App {
         comm.create_service_streams().await?;
         let mut pi_messages = comm.subscribe_to_smart_home().await?;
 
-        let mut controlling_interval = interval_at(
-            Instant::now()
-                .checked_add(Duration::from_secs_f32(
-                    CONFIG.controller.sensor_data_update_interval,
-                ))
-                .context("Controller start time not in range")?,
-            Duration::from_secs_f32(CONFIG.controller.controller_time),
-        );
+        let create_action_interval = || {
+            let mut interval = interval_at(
+                Instant::now()
+                    .checked_add(Duration::from_secs_f32(
+                        CONFIG.controller.sensor_data_update_interval,
+                    ))
+                    .context("Controller start time not in range")?,
+                Duration::from_secs_f32(CONFIG.controller.controller_time),
+            );
+            interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
-        let mut sensor_data_update_interval = interval(Duration::from_secs_f32(
-            CONFIG.controller.sensor_data_update_interval,
-        ));
+            interval
+        };
+
+        let mut perform_control_action = create_action_interval();
+        let mut report_state = create_action_interval();
+
+        let create_sensor_data_update_interval = || {
+            let mut interval = interval(Duration::from_secs_f32(
+                CONFIG.controller.sensor_data_update_interval,
+            ));
+            interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
+            interval
+        };
+
+        let mut query_miner_state = create_sensor_data_update_interval();
+        let mut query_inverter_state = create_sensor_data_update_interval();
 
         // TODO: also listen to
         // - timer for aggregating power data and sending it out
         loop {
             tokio::select! {
+                _ = query_inverter_state.tick() => {
+                    // TODO: implement reading from modbus and then sending update on a update_events channel
+                }
+                _ = query_miner_state.tick() => {
+                    if let Err(err) = comm.query_plug_state().await {
+                        error!("Errored while querying the plug state: {}", err);
+                        continue;
+                    }
+                }
+                // TODO: instead create update_events stream and listen to that
+                // that stream icludes pi_messages mapped to UpdateEvents
+                // and inverter queries also mapped to update events
                 Some(message) = pi_messages.next() => {
-                    if let Err(err) = self.state.update(&message).await {
+                    if let Err(err) = self.state.handle_message(&message).await {
                         // TODO: send out error message and continue
                         error!("Errored while updating the state: {}", err);
                         continue;
                     }
                 }
-                _ = controlling_interval.tick() => {
+                _ = perform_control_action.tick() => {
                     if let Err(err) = self.controller.perform_action(&self.state, &comm).await {
                         error!("Errored while flipping the miner plug: {}", err);
                         continue;
                     }
                 }
-                _ = sensor_data_update_interval.tick() => {
-                    if let Err(err) = comm.query_plug_state().await {
-                        error!("Errored while querying the plug state: {}", err);
-                        continue;
-                    }
+                _ = report_state.tick() => {
+                    // Implement reporting
+                    ()
                 }
             }
         }
