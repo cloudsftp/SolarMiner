@@ -16,7 +16,7 @@ use crate::CONFIG;
 const PLUG_TOPICS: &[&str] = &["stat.*.RESULT", "stat.*.STATUS8"];
 const SOLAREDGE_TOPICS: &[&str] = &["solaredge.modbus.battery.battery0", "solaredge.powerflow"];
 
-const RELEVANT_SMART_HOME_TOPICS: Lazy<Vec<&str>> = Lazy::new(|| {
+static RELEVANT_SMART_HOME_TOPICS: Lazy<Vec<&str>> = Lazy::new(|| {
     let mut topics = Vec::new();
     topics.extend_from_slice(PLUG_TOPICS);
     topics.extend_from_slice(SOLAREDGE_TOPICS);
