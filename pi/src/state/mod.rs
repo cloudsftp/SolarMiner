@@ -75,7 +75,7 @@ impl State {
         }
     }
 
-    pub fn skip_plug_command_condition(&self, on: bool) -> bool {
+    pub fn should_skip_send_plug_command(&self, on: bool) -> bool {
         matches!(
             (&self.plug.state, on),
             (PlugState::Unknown, _) | (PlugState::On, true) | (PlugState::Off, false)

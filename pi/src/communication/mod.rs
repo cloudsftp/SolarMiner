@@ -44,6 +44,19 @@ impl Communication {
 
         Ok(())
     }
+
+    pub async fn flip_plug_switch(&self, on: bool) -> Result<(), Error> {
+        let payload = if on { "ON" } else { "OFF" }.into();
+
+        self.pi_nats
+            .publish(
+                format!("cmnd.{}.POWER", CONFIG.communication.plug_name),
+                payload,
+            )
+            .await?;
+
+        Ok(())
+    }
 }
 
 pub async fn nats_subscribe(

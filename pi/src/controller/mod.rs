@@ -28,33 +28,9 @@ impl Controller {
         debug!("Controller performing action");
         let on = state.mining_condition();
 
-        debug!("Desired switch state: {}", on);
-        if self.switch.perform(on) {
-            debug!("Trying to change switch state");
-            self.flip_plug_switch(on, state, comm).await?;
+        if self.switch.perform(on) && !state.should_skip_send_plug_command(on) {
+            comm.flip_plug_switch(on).await?;
         }
-
-        Ok(())
-    }
-
-    async fn flip_plug_switch(
-        &self,
-        on: bool,
-        state: &State,
-        comm: &Communication,
-    ) -> Result<(), Error> {
-        if state.skip_plug_command_condition(on) {
-            return Ok(());
-        }
-
-        let payload = if on { "ON" } else { "OFF" }.into();
-
-        comm.pi_nats
-            .publish(
-                format!("cmnd.{}.POWER", CONFIG.communication.plug_name),
-                payload,
-            )
-            .await?;
 
         Ok(())
     }
