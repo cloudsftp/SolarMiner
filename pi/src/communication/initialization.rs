@@ -1,5 +1,3 @@
-use std::env;
-
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::{
     Client, ConnectOptions, Message,
@@ -9,10 +7,21 @@ use async_nats::{
     },
 };
 use futures::{Stream, future::try_join_all, stream::select_all};
-
-use crate::CONFIG;
+use once_cell::sync::Lazy;
+use std::env;
 
 use super::Communication;
+use crate::CONFIG;
+
+const PLUG_TOPICS: &[&str] = &["stat.*.RESULT", "stat.*.STATUS8"];
+const SOLAREDGE_TOPICS: &[&str] = &["solaredge.modbus.battery.battery0", "solaredge.powerflow"];
+
+const RELEVANT_SMART_HOME_TOPICS: Lazy<Vec<&str>> = Lazy::new(|| {
+    let mut topics = Vec::new();
+    topics.extend_from_slice(PLUG_TOPICS);
+    topics.extend_from_slice(SOLAREDGE_TOPICS);
+    topics
+});
 
 impl Communication {
     pub async fn connect() -> Result<Self, Error> {
@@ -34,24 +43,16 @@ impl Communication {
             .context("Could not create the state stream for the service")
     }
 
-    pub async fn subscribe_to_pi(&self) -> Result<impl Stream<Item = Message>, Error> {
-        nats_subscribe(
-            self.pi_nats.clone(),
-            &[
-                "stat.*.RESULT",
-                "stat.*.STATUS8",
-                "solaredge.modbus.battery.battery0",
-                "solaredge.powerflow",
-            ],
-        )
-        .await
-        .context("Could not subscribe to the subjects on the controller")
+    pub async fn subscribe_to_smart_home(&self) -> Result<impl Stream<Item = Message>, Error> {
+        nats_subscribe(self.pi_nats.clone(), RELEVANT_SMART_HOME_TOPICS.to_vec())
+            .await
+            .context("Could not subscribe to the subjects on the controller")
     }
 }
 
 async fn nats_subscribe(
     nats: Client,
-    subjects: &[&str],
+    subjects: Vec<&str>,
 ) -> Result<impl Stream<Item = Message>, Error> {
     let subscribers = try_join_all(
         subjects

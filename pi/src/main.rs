@@ -32,7 +32,7 @@ static CONFIG: Lazy<Config> =
 impl App {
     async fn run(mut self, comm: Communication) -> Result<(), Error> {
         comm.create_service_streams().await?;
-        let mut pi_messages = comm.subscribe_to_pi().await?;
+        let mut pi_messages = comm.subscribe_to_smart_home().await?;
 
         let mut controlling_interval = interval_at(
             Instant::now()
