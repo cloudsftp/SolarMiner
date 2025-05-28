@@ -14,9 +14,9 @@ pub enum PlugState {
 
 #[derive(Debug)]
 pub struct EnergyState {
-    total: f64,
-    yesterday: f64,
-    today: f64,
+    total: f32,
+    yesterday: f32,
+    today: f32,
 }
 
 #[derive(Debug)]

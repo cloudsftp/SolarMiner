@@ -17,11 +17,12 @@ pub enum UpdateEvent {
     },
     PlugEnergyUpdate {
         device: String,
-        total: f64,
-        yesterday: f64,
-        today: f64,
+        total: f32,
+        yesterday: f32,
+        today: f32,
+        power: f32,
     },
-    PowerUpdate {
+    SolarPowerUpdate {
         pv_production: usize,
         house_demand: usize,
         grid: PowerDemand,

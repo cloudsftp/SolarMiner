@@ -19,19 +19,27 @@ enum PlugStateValue {
 enum CommandResult {
     #[serde(alias = "POWER")]
     Power(PlugStateValue),
-    #[serde(
-        alias = "EnergyTotal",
-        alias = "EnergyYesterday",
-        alias = "EnergyToday"
-    )]
-    EnergyConsumption {
-        #[serde(alias = "Total")]
-        total: f64,
-        #[serde(alias = "Yesterday")]
-        yesterday: f64,
-        #[serde(alias = "Today")]
-        today: f64,
-    },
+}
+
+#[derive(Debug, PartialEq, Deserialize)]
+struct Status8 {
+    #[serde(rename = "StatusSNS")]
+    status_sns: StatusSNS,
+}
+
+#[derive(Debug, PartialEq, Deserialize)]
+struct StatusSNS {
+    #[serde(rename = "ENERGY")]
+    energy: Status8Energy,
+}
+
+#[derive(Debug, PartialEq, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+struct Status8Energy {
+    total: f32,
+    yesterday: f32,
+    today: f32,
+    power: f32,
 }
 
 pub fn decode_plug_message(topic_parts: &[&str], message: &Message) -> Result<UpdateEvent, Error> {
@@ -51,16 +59,6 @@ pub fn decode_plug_message(topic_parts: &[&str], message: &Message) -> Result<Up
                     let on = matches!(value, PlugStateValue::On);
                     UpdateEvent::PlugStateUpdate { device, on }
                 }
-                CommandResult::EnergyConsumption {
-                    total,
-                    yesterday,
-                    today,
-                } => UpdateEvent::PlugEnergyUpdate {
-                    device: device.to_string(),
-                    total,
-                    yesterday,
-                    today,
-                },
             }
         }
         [_location @ .., device, "POWER"] => {
@@ -77,7 +75,15 @@ pub fn decode_plug_message(topic_parts: &[&str], message: &Message) -> Result<Up
             let on = matches!(plug_update, PlugStateValue::On);
             UpdateEvent::PlugStateUpdate { device, on }
         }
-        //[_location @ .., device, "STATUS8"] => {}
+        /*
+        [_location @ .., device, "STATUS8"] => {
+            let status8: Status8 = serde_json::from_slice(&message.payload)?;
+
+            UpdateEvent::PlugPowerUpdate{
+                todo!()
+            }
+        }
+         */
         _ => UpdateEvent::Unknown {
             subject: message.subject.clone(),
             payload: message.payload.clone(),

@@ -30,6 +30,7 @@ impl State {
                 total,
                 yesterday,
                 today,
+                power,
             } => {
                 if device != CONFIG.communication.plug_name {
                     return Err(anyhow!(
@@ -42,9 +43,9 @@ impl State {
                     total,
                     yesterday,
                     today,
-                })
+                });
             }
-            UpdateEvent::PowerUpdate {
+            UpdateEvent::SolarPowerUpdate {
                 pv_production,
                 house_demand,
                 grid,

@@ -62,7 +62,7 @@ pub fn decode_solaredge_message(
         ["powerflow"] => {
             let power_flow: Power = serde_json::from_slice(&message.payload)?;
 
-            UpdateEvent::PowerUpdate {
+            UpdateEvent::SolarPowerUpdate {
                 pv_production: power_flow.pv_production,
                 house_demand: power_flow.consumer.house,
                 grid: PowerDemand {
