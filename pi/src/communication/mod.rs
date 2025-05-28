@@ -3,7 +3,10 @@ use std::env;
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::{
     Client, ConnectOptions, Message,
-    jetstream::{self, Context},
+    jetstream::{
+        self, Context,
+        stream::{self, Info},
+    },
 };
 use futures::{Stream, future::try_join_all, stream::select_all};
 
@@ -23,6 +26,30 @@ impl Communication {
         let server_js = jetstream::new(server_nats);
 
         Ok(Self { pi_nats, server_js })
+    }
+
+    pub async fn create_service_streams(&self) -> Result<Info, Error> {
+        self.server_js
+            .create_or_update_stream(stream::Config {
+                name: CONFIG.communication.state_stream_name.clone(),
+                ..Default::default()
+            })
+            .await
+            .context("Could not create the state stream for the service")
+    }
+
+    pub async fn subscribe_to_pi(&self) -> Result<impl Stream<Item = Message>, Error> {
+        nats_subscribe(
+            self.pi_nats.clone(),
+            &[
+                "stat.*.RESULT",
+                "stat.*.STATUS8",
+                "solaredge.modbus.battery.battery0",
+                "solaredge.powerflow",
+            ],
+        )
+        .await
+        .context("Could not subscribe to the subjects on the controller")
     }
 
     pub async fn query_plug_state(&self) -> Result<(), Error> {
@@ -59,7 +86,7 @@ impl Communication {
     }
 }
 
-pub async fn nats_subscribe(
+async fn nats_subscribe(
     nats: Client,
     subjects: &[&str],
 ) -> Result<impl Stream<Item = Message>, Error> {

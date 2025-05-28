@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use anyhow::{Context as AnyhowContext, Error};
-use async_nats::jetstream::stream;
 use config::Config;
 use controller::Controller;
 use dotenv::dotenv;
@@ -18,7 +17,7 @@ mod config;
 mod controller;
 mod state;
 
-use communication::{Communication, nats_subscribe};
+use communication::Communication;
 use state::State;
 
 #[derive(Debug)]
@@ -32,25 +31,8 @@ static CONFIG: Lazy<Config> =
 
 impl App {
     async fn run(mut self, comm: Communication) -> Result<(), Error> {
-        comm.server_js
-            .create_or_update_stream(stream::Config {
-                name: CONFIG.communication.state_stream_name.clone(),
-                ..Default::default()
-            })
-            .await
-            .context("Could not create the state stream for the service")?;
-
-        let mut pi_messages = nats_subscribe(
-            comm.pi_nats.clone(),
-            &[
-                "stat.*.RESULT",
-                "stat.*.STATUS8",
-                "solaredge.modbus.battery.battery0",
-                "solaredge.powerflow",
-            ],
-        )
-        .await
-        .context("Could not subscribe to the subjects on the controller")?;
+        comm.create_service_streams().await?;
+        let mut pi_messages = comm.subscribe_to_pi().await?;
 
         let mut controlling_interval = interval_at(
             Instant::now()
@@ -94,11 +76,11 @@ impl App {
 }
 
 impl App {
-    async fn init() -> Result<Self, Error> {
-        let state = State::new();
-        let controller = Controller::new();
-
-        Ok(App { state, controller })
+    fn new() -> Self {
+        App {
+            state: State::new(),
+            controller: Controller::new(),
+        }
     }
 }
 
@@ -111,7 +93,7 @@ async fn main() -> Result<(), Error> {
         .await
         .context("Could not connect to the communication services")?;
 
-    let app = App::init().await?;
+    let app = App::new();
     let main_task = tokio::spawn(app.run(comm));
 
     let mut signal_terminate = unix::signal(SignalKind::terminate())?;
