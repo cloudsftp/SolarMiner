@@ -1,12 +1,10 @@
-mod events;
-
 use anyhow::{Error, anyhow};
 use async_nats::Message;
-use events::UpdateEvent;
 use log::debug;
 
 use crate::{
     CONFIG,
+    communication::events::UpdateEvent,
     state::{EnergyState, PlugState, PowerData, State},
 };
 

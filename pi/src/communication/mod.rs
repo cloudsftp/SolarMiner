@@ -1,3 +1,4 @@
+pub mod events;
 mod initialization;
 
 use anyhow::{Context as AnyhowContext, Error};

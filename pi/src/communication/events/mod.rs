@@ -2,7 +2,8 @@
 mod tests;
 
 use anyhow::{Context as AnyhowContext, Error};
-use async_nats::{Message, Subject};
+use async_nats::Message;
+use async_nats::Subject;
 use bytes::Bytes;
 use itertools::Itertools;
 use serde::Deserialize;
@@ -40,6 +41,8 @@ pub struct PowerDemand {
     pub demand: usize,
     pub production: usize,
 }
+
+// TODO: move structs and methods to decode messages to submodules
 
 #[derive(Debug, PartialEq, Deserialize)]
 enum PlugStateValue {
@@ -174,6 +177,7 @@ fn decode_plug_message(topic_parts: &[&str], message: &Message) -> Result<Update
             let on = matches!(plug_update, PlugStateValue::On);
             UpdateEvent::PlugStateUpdate { device, on }
         }
+        //[_location @ .., device, "STATUS8"] => {}
         _ => UpdateEvent::Unknown {
             subject: message.subject.clone(),
             payload: message.payload.clone(),
