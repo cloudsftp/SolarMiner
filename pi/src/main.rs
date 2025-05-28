@@ -10,7 +10,7 @@ use log::{error, info};
 use once_cell::sync::Lazy;
 use tokio::{
     signal::unix::{self, SignalKind},
-    time::{Instant, interval_at},
+    time::{Instant, interval, interval_at},
 };
 
 mod communication;
@@ -46,20 +46,13 @@ impl App {
             self.comm.pi_nats.clone(),
             &[
                 "stat.*.RESULT",
+                "stat.*.STATUS8",
                 "solaredge.modbus.battery.battery0",
                 "solaredge.powerflow",
             ],
         )
         .await
         .context("Could not subscribe to the subjects on the controller")?;
-
-        self.comm
-            .pi_nats
-            .publish(
-                format!("cmnd.{}.Power", CONFIG.communication.plug_name),
-                "".into(),
-            )
-            .await?;
 
         let mut controlling_interval = interval_at(
             Instant::now()
@@ -69,6 +62,10 @@ impl App {
                 .context("Controller start time not in range")?,
             Duration::from_secs_f32(CONFIG.controller.controller_time),
         );
+
+        let mut sensor_data_update_interval = interval(Duration::from_secs_f32(
+            CONFIG.controller.sensor_data_update_interval,
+        ));
 
         // TODO: also listen to
         // - timer for aggregating power data and sending it out
@@ -84,6 +81,12 @@ impl App {
                 _ = controlling_interval.tick() => {
                     if let Err(err) = self.controller.perform_action(&self.state, &self.comm).await {
                         error!("Errored while flipping the miner plug: {}", err);
+                        continue;
+                    }
+                }
+                _ = sensor_data_update_interval.tick() => {
+                    if let Err(err) = self.comm.query_plug_state().await {
+                        error!("Errored while querying the plug state: {}", err);
                         continue;
                     }
                 }

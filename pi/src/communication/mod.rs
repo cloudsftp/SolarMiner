@@ -7,6 +7,8 @@ use async_nats::{
 };
 use futures::{Stream, future::try_join_all, stream::select_all};
 
+use crate::CONFIG;
+
 #[derive(Debug, Clone)]
 pub struct Communication {
     pub pi_nats: Client,
@@ -21,6 +23,26 @@ impl Communication {
         let server_js = jetstream::new(server_nats);
 
         Ok(Self { pi_nats, server_js })
+    }
+
+    pub async fn query_plug_state(&self) -> Result<(), Error> {
+        self.pi_nats
+            .publish(
+                format!("cmnd.{}.Power", CONFIG.communication.plug_name),
+                "".into(),
+            )
+            .await
+            .context("Could not query switch state of plug")?;
+
+        self.pi_nats
+            .publish(
+                format!("cmnd.{}.Status", CONFIG.communication.plug_name),
+                "8".into(),
+            )
+            .await
+            .context("Could not query power state of plug")?;
+
+        Ok(())
     }
 }
 
