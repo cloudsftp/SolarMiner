@@ -1,6 +1,7 @@
 use std::fs::File;
 
-/*
+use super::*;
+
 #[test]
 fn battery_state() {
     let file =
@@ -19,4 +20,3 @@ fn battery_state() {
         battery_state
     )
 }
- */
