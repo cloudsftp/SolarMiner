@@ -1,6 +1,7 @@
 mod switch;
 
 use anyhow::Error;
+use log::debug;
 use switch::DampenedSwitch;
 
 use crate::{CONFIG, communication::Communication, state::State};
@@ -24,9 +25,12 @@ impl Controller {
         state: &State,
         comm: &Communication,
     ) -> Result<(), Error> {
+        debug!("Controller performing action");
         let on = state.mining_condition();
 
+        debug!("Desired switch state: {}", on);
         if self.switch.perform(on) {
+            debug!("Trying to change switch state");
             self.flip_plug_switch(on, state, comm).await?;
         }
 

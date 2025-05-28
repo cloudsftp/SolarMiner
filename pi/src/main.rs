@@ -10,7 +10,7 @@ use log::{error, info};
 use once_cell::sync::Lazy;
 use tokio::{
     signal::unix::{self, SignalKind},
-    time::interval,
+    time::{Instant, interval_at},
 };
 
 mod communication;
@@ -61,8 +61,14 @@ impl App {
             )
             .await?;
 
-        let mut controlling_interval =
-            interval(Duration::from_secs_f32(CONFIG.controller.controller_time));
+        let mut controlling_interval = interval_at(
+            Instant::now()
+                .checked_add(Duration::from_secs_f32(
+                    CONFIG.controller.sensor_data_update_interval,
+                ))
+                .context("Controller start time not in range")?,
+            Duration::from_secs_f32(CONFIG.controller.controller_time),
+        );
 
         // TODO: also listen to
         // - timer for aggregating power data and sending it out
