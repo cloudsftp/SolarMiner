@@ -96,28 +96,19 @@ struct ConsumerPower {
 
 #[derive(Debug, PartialEq, Deserialize)]
 struct BatteryState {
-    status: BatteryStatus, // TODO: enum (4: discharge)
+    status: BatteryStatus,
     state_of_charge: f32,
 }
 
 #[derive(Debug, PartialEq, Serialize_repr, Deserialize_repr)]
 #[repr(usize)]
 enum BatteryStatus {
-    ZERO = 0,
-    ONE = 1,
-    TWO = 2,
-    THREE = 3,
+    Charging = 3,
     Discharging = 4,
-    FIVE = 5,
-    PreserveCharge = 6,
-    /*
-    3: "Charge",
-    4: "Discharge",
-    5: "Fault",
-    6: "Preserve Charge",
-    7: "Idle",
-    10: "Power Saving",
-     */
+    Fault = 5,
+    PreservingCharge = 6,
+    Idle = 7,
+    PowerSaving = 10,
 }
 
 impl TryFrom<&Message> for UpdateEvent {

@@ -28,8 +28,9 @@ pub struct State {
 
 #[derive(Debug, Clone, Copy)]
 struct PowerData {
-    from_grid: usize,
     from_pv: usize,
+    from_battery: usize,
+    from_grid: usize,
     to_house: usize,
     to_battery: usize,
     to_grid: usize,
