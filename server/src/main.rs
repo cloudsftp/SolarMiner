@@ -2,6 +2,7 @@ use std::env;
 
 use anyhow::{Context, Error, anyhow};
 use dotenv::dotenv;
+use env_logger::Target;
 use futures_util::StreamExt;
 use log::{debug, error, info};
 use nats_common::{MessageStream, connect_jetstream, create_stream, try_pub_sub_subscribe};
@@ -17,7 +18,7 @@ struct Config {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    env_logger::init();
+    env_logger::Builder::new().target(Target::Stdout).init();
     dotenv()?;
 
     let state_stream_name: &str = env::var("STATE_STREAM_NAME")?.leak();

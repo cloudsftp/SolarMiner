@@ -4,6 +4,7 @@ use anyhow::{Context as AnyhowContext, Error};
 use config::Config;
 use controller::Controller;
 use dotenv::dotenv;
+use env_logger::Target;
 use futures::StreamExt;
 use log::{error, info};
 use once_cell::sync::Lazy;
@@ -108,7 +109,7 @@ impl App {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    env_logger::init();
+    env_logger::Builder::new().target(Target::Stdout).init();
     dotenv()?;
 
     let comm = Communication::connect()
