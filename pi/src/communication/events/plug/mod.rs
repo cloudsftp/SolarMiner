@@ -75,15 +75,23 @@ pub fn decode_plug_message(topic_parts: &[&str], message: &Message) -> Result<Up
             let on = matches!(plug_update, PlugStateValue::On);
             UpdateEvent::PlugStateUpdate { device, on }
         }
-        /*
         [_location @ .., device, "STATUS8"] => {
             let status8: Status8 = serde_json::from_slice(&message.payload)?;
+            let Status8Energy {
+                total,
+                yesterday,
+                today,
+                power,
+            } = status8.status_sns.energy;
 
-            UpdateEvent::PlugPowerUpdate{
-                todo!()
+            UpdateEvent::PlugEnergyUpdate {
+                device: device.to_string(),
+                total,
+                yesterday,
+                today,
+                power,
             }
         }
-         */
         _ => UpdateEvent::Unknown {
             subject: message.subject.clone(),
             payload: message.payload.clone(),
