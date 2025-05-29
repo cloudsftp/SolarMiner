@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use anyhow::{Context as AnyhowContext, Error};
 use config::Config;
 use controller::Controller;
@@ -32,7 +30,7 @@ static CONFIG: Lazy<Config> =
 impl App {
     async fn run(mut self, comm: Communication) -> Result<(), Error> {
         comm.create_service_streams().await?;
-        let mut pi_messages = comm.subscribe_to_smart_home().await?;
+        let mut update_events = comm.get_update_events().await?;
 
         let create_action_interval = || -> Result<_, Error> {
             let mut interval = interval_at(
@@ -75,8 +73,8 @@ impl App {
                 // TODO: instead create update_events stream and listen to that
                 // that stream icludes pi_messages mapped to UpdateEvents
                 // and inverter queries also mapped to update events
-                Some(message) = pi_messages.next() => {
-                    if let Err(err) = self.state.handle_message(&message).await {
+                Some(update_event) = update_events.next() => {
+                    if let Err(err) = self.state.update(update_event).await {
                         // TODO: send out error message and continue
                         error!("Errored while updating the state: {}", err);
                         continue;

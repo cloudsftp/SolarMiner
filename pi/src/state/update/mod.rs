@@ -1,5 +1,4 @@
 use anyhow::{Error, anyhow};
-use async_nats::Message;
 use log::debug;
 
 use crate::{
@@ -9,9 +8,8 @@ use crate::{
 };
 
 impl State {
-    pub async fn handle_message(&mut self, message: &Message) -> Result<(), Error> {
-        let update = UpdateEvent::try_from(message)?;
-        match update {
+    pub async fn update(&mut self, update: Result<UpdateEvent, Error>) -> Result<(), Error> {
+        match update? {
             UpdateEvent::PlugStateUpdate { device, on } => {
                 if device != CONFIG.communication.plug_name {
                     return Err(anyhow!(
