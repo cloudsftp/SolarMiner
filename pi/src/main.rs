@@ -34,27 +34,23 @@ impl App {
         comm.create_service_streams().await?;
         let mut pi_messages = comm.subscribe_to_smart_home().await?;
 
-        let create_action_interval = || {
+        let create_action_interval = || -> Result<_, Error> {
             let mut interval = interval_at(
                 Instant::now()
-                    .checked_add(Duration::from_secs_f32(
-                        CONFIG.controller.sensor_data_update_interval,
-                    ))
+                    .checked_add(CONFIG.controller.sensor_data_update_interval)
                     .context("Controller start time not in range")?,
-                Duration::from_secs_f32(CONFIG.controller.controller_time),
+                CONFIG.controller.controller_interval,
             );
             interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
-            interval
+            Ok(interval)
         };
 
-        let mut perform_control_action = create_action_interval();
-        let mut report_state = create_action_interval();
+        let mut perform_control_action = create_action_interval()?;
+        let mut report_state = create_action_interval()?;
 
         let create_sensor_data_update_interval = || {
-            let mut interval = interval(Duration::from_secs_f32(
-                CONFIG.controller.sensor_data_update_interval,
-            ));
+            let mut interval = interval(CONFIG.controller.sensor_data_update_interval);
             interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
             interval
