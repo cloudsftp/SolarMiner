@@ -4,7 +4,7 @@ use anyhow::Error;
 use log::debug;
 use switch::DampenedSwitch;
 
-use crate::{CONFIG, communication::Communication, state::State};
+use crate::{CONFIG, communication::Communication, state::PartialState};
 
 #[derive(Debug)]
 pub struct Controller {
@@ -22,7 +22,7 @@ impl Controller {
 impl Controller {
     pub async fn perform_action(
         &mut self,
-        state: &State,
+        state: &PartialState,
         comm: &Communication,
     ) -> Result<(), Error> {
         debug!("Controller performing action");

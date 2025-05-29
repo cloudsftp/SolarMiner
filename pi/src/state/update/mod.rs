@@ -4,10 +4,10 @@ use log::debug;
 use crate::{
     CONFIG,
     communication::events::UpdateEvent,
-    state::{EnergyState, PlugState, PowerData, State},
+    state::{EnergyState, PartialState, PowerData},
 };
 
-impl State {
+impl PartialState {
     pub async fn update(&mut self, update: Result<UpdateEvent, Error>) -> Result<(), Error> {
         match update? {
             UpdateEvent::PlugStateUpdate { device, on } => {
@@ -18,10 +18,7 @@ impl State {
                     ));
                 }
 
-                self.plug.state = match on {
-                    true => PlugState::On,
-                    false => PlugState::Off,
-                }
+                self.plug.on.set(on)
             }
             UpdateEvent::PlugEnergyUpdate {
                 device,
@@ -37,10 +34,11 @@ impl State {
                     ));
                 }
 
-                self.plug.energy = Some(EnergyState {
+                self.plug.energy.set(EnergyState {
                     total,
                     yesterday,
                     today,
+                    power,
                 });
             }
             UpdateEvent::SolarPowerUpdate {
@@ -49,7 +47,7 @@ impl State {
                 grid,
                 battery,
             } => {
-                self.power = Some(PowerData {
+                self.inverter.power.set(PowerData {
                     from_pv: pv_production,
                     from_battery: battery.production,
                     from_grid: grid.demand,
@@ -59,7 +57,7 @@ impl State {
                 });
             }
             UpdateEvent::BatteryUpdate { level } => {
-                self.battery_level = Some(level);
+                self.inverter.battery_level.set(level);
             }
             UpdateEvent::Unknown { subject, payload } => {
                 debug!(

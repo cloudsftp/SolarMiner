@@ -1,32 +1,26 @@
+mod part;
 mod update;
 
 #[cfg(test)]
 mod tests;
 
+use part::Part;
+
 use crate::CONFIG;
 
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub enum PlugState {
-    On,
-    Off,
-    Unknown,
+#[derive(Debug, PartialEq, Clone)]
+pub struct PartialState {
+    plug: PartialPlugState,
+    inverter: PartialInverterState,
 }
 
-#[derive(Debug)]
-pub struct EnergyState {
-    total: f32,
-    yesterday: f32,
-    today: f32,
+#[derive(Debug, PartialEq, Clone)]
+pub struct PartialInverterState {
+    power: Part<PowerData>,
+    battery_level: Part<f32>,
 }
 
-#[derive(Debug)]
-pub struct State {
-    plug: Plug,
-    power: Option<PowerData>,
-    battery_level: Option<f32>,
-}
-
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone)]
 struct PowerData {
     from_pv: usize,
     from_battery: usize,
@@ -36,50 +30,86 @@ struct PowerData {
     to_grid: usize,
 }
 
-#[derive(Debug)]
-struct Plug {
-    state: PlugState,
-    energy: Option<EnergyState>,
+#[derive(Debug, PartialEq, Clone)]
+struct PartialPlugState {
+    on: Part<bool>,
+    energy: Part<EnergyState>,
 }
 
-impl State {
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct EnergyState {
+    total: f32,
+    yesterday: f32,
+    today: f32,
+    power: f32,
+}
+
+impl PartialState {
     pub fn new() -> Self {
+        let timeout = 6 * CONFIG.controller.sensor_data_update_interval;
+
         Self {
-            plug: Plug {
-                state: PlugState::Unknown,
-                energy: Default::default(),
+            plug: PartialPlugState {
+                on: Part::new(true, timeout),
+                energy: Part::new(
+                    EnergyState {
+                        total: 0.,
+                        yesterday: 0.,
+                        today: 0.,
+                        power: CONFIG.controller.miner_demand as f32,
+                    },
+                    timeout,
+                ),
             },
-            power: Default::default(),
-            battery_level: Default::default(),
+            inverter: PartialInverterState {
+                power: Part::new(
+                    PowerData {
+                        from_pv: 0,
+                        from_battery: 0,
+                        from_grid: 0,
+                        to_house: 0,
+                        to_battery: 0,
+                        to_grid: 0,
+                    },
+                    timeout,
+                ),
+                battery_level: Part::new(0., timeout),
+            },
         }
     }
 }
 
-impl State {
+impl PartialState {
     pub fn mining_condition(&self) -> bool {
-        match (self.battery_level, self.power) {
-            (Some(level), _) if level > CONFIG.controller.battery_high_threshold => true,
-            (
-                Some(level),
-                Some(PowerData {
-                    from_pv, to_house, ..
-                }),
-            ) if level > CONFIG.controller.battery_low_threshold => {
-                from_pv - to_house
-                    > if matches!(self.plug.state, PlugState::On) {
-                        0
-                    } else {
-                        CONFIG.controller.miner_demand
-                    }
+        match self.inverter.battery_level.get() {
+            level if level > CONFIG.controller.battery_high_threshold => true,
+            level if level > CONFIG.controller.battery_low_threshold => {
+                self.production_satisfies_miner()
             }
             _ => false,
         }
     }
 
-    pub fn should_skip_send_plug_command(&self, on: bool) -> bool {
-        matches!(
-            (&self.plug.state, on),
-            (PlugState::Unknown, _) | (PlugState::On, true) | (PlugState::Off, false)
-        )
+    fn production_satisfies_miner(&self) -> bool {
+        let PowerData {
+            from_pv, to_house, ..
+        } = self.inverter.power.get();
+
+        (from_pv - to_house) as f32 > self.miner_demand()
+    }
+
+    fn miner_demand(&self) -> f32 {
+        if self.plug.on.get() {
+            self.plug.energy.get().power
+        } else {
+            0.
+        }
+    }
+
+    pub fn should_skip_send_plug_command(&self, desired: bool) -> bool {
+        match self.plug.on.try_get() {
+            Ok(current) => current.map(|current| current == desired).unwrap_or(false),
+            Err(_) => false,
+        }
     }
 }

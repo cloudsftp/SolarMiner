@@ -16,11 +16,11 @@ mod controller;
 mod state;
 
 use communication::Communication;
-use state::State;
+use state::PartialState;
 
 #[derive(Debug)]
 struct App {
-    state: State,
+    state: PartialState,
     controller: Controller,
 }
 
@@ -98,7 +98,7 @@ impl App {
 impl App {
     fn new() -> Self {
         App {
-            state: State::new(),
+            state: PartialState::new(),
             controller: Controller::new(),
         }
     }
