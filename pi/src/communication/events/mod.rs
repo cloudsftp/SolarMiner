@@ -23,8 +23,8 @@ pub enum UpdateEvent {
         power: f32,
     },
     SolarPowerUpdate {
-        pv_production: usize,
-        house_demand: usize,
+        pv_production: f32,
+        house_demand: f32,
         grid: PowerDemand,
         battery: PowerDemand,
     },
@@ -39,8 +39,8 @@ pub enum UpdateEvent {
 
 #[derive(Debug, PartialEq)]
 pub struct PowerDemand {
-    pub demand: usize,
-    pub production: usize,
+    pub demand: f32,
+    pub production: f32,
 }
 
 impl TryFrom<&Message> for UpdateEvent {

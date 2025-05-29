@@ -23,8 +23,10 @@ pub struct ControllerConfig {
     #[serde(deserialize_with = "deserialize_duration")]
     pub sensor_data_update_interval: Duration,
     #[serde(deserialize_with = "deserialize_duration")]
+    pub sensor_data_outdated_interval: Duration,
+    #[serde(deserialize_with = "deserialize_duration")]
     pub switch_debounce_duration: Duration,
-    pub miner_demand: usize,
+    pub miner_demand: f32,
     pub battery_low_threshold: f32,
     pub battery_high_threshold: f32,
 }

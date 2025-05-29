@@ -4,6 +4,7 @@ mod update;
 #[cfg(test)]
 mod tests;
 
+use anyhow::{Context, Error};
 use part::Part;
 
 use crate::CONFIG;
@@ -22,12 +23,12 @@ pub struct PartialInverterState {
 
 #[derive(Debug, PartialEq, Clone)]
 struct PowerData {
-    from_pv: usize,
-    from_battery: usize,
-    from_grid: usize,
-    to_house: usize,
-    to_battery: usize,
-    to_grid: usize,
+    from_pv: f32,
+    from_battery: f32,
+    from_grid: f32,
+    to_house: f32,
+    to_battery: f32,
+    to_grid: f32,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -46,7 +47,7 @@ pub struct EnergyState {
 
 impl PartialState {
     pub fn new() -> Self {
-        let timeout = 6 * CONFIG.controller.sensor_data_update_interval;
+        let timeout = CONFIG.controller.sensor_data_outdated_interval;
 
         Self {
             plug: PartialPlugState {
@@ -56,7 +57,7 @@ impl PartialState {
                         total: 0.,
                         yesterday: 0.,
                         today: 0.,
-                        power: CONFIG.controller.miner_demand as f32,
+                        power: CONFIG.controller.miner_demand,
                     },
                     timeout,
                 ),
@@ -64,12 +65,12 @@ impl PartialState {
             inverter: PartialInverterState {
                 power: Part::new(
                     PowerData {
-                        from_pv: 0,
-                        from_battery: 0,
-                        from_grid: 0,
-                        to_house: 0,
-                        to_battery: 0,
-                        to_grid: 0,
+                        from_pv: 0.,
+                        from_battery: 0.,
+                        from_grid: 0.,
+                        to_house: 0.,
+                        to_battery: 0.,
+                        to_grid: 0.,
                     },
                     timeout,
                 ),
@@ -95,14 +96,14 @@ impl PartialState {
             from_pv, to_house, ..
         } = self.inverter.power.get_or_default();
 
-        (from_pv - to_house) as f32 > self.miner_demand()
+        from_pv - to_house > self.miner_demand()
     }
 
     fn miner_demand(&self) -> f32 {
         if self.plug.on.get_or_default() {
-            self.plug.energy.get_or_default().power
-        } else {
             0.
+        } else {
+            CONFIG.controller.miner_demand as f32
         }
     }
 

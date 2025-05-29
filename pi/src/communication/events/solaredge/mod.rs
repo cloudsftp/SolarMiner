@@ -42,15 +42,14 @@ struct BatteryState {
 #[derive(Debug, PartialEq, Serialize_repr, Deserialize_repr)]
 #[repr(usize)]
 pub enum BatteryStatus {
+    Off = 0,
     Standby = 1,
-    Unknown2 = 2,
+    Init = 2,
     Charging = 3,
     Discharging = 4,
     Fault = 5,
     PreservingCharge = 6,
     Idle = 7,
-    Unknown8 = 8,
-    Unknown9 = 9,
     PowerSaving = 10,
 }
 
@@ -63,15 +62,15 @@ pub fn decode_solaredge_message(
             let power_flow: Power = serde_json::from_slice(&message.payload)?;
 
             UpdateEvent::SolarPowerUpdate {
-                pv_production: power_flow.pv_production,
-                house_demand: power_flow.consumer.house,
+                pv_production: power_flow.pv_production as f32,
+                house_demand: power_flow.consumer.house as f32,
                 grid: PowerDemand {
-                    demand: power_flow.grid.consumption,
-                    production: power_flow.grid.delivery,
+                    demand: power_flow.grid.consumption as f32,
+                    production: power_flow.grid.delivery as f32,
                 },
                 battery: PowerDemand {
-                    demand: power_flow.battery.charge,
-                    production: power_flow.battery.discharge,
+                    demand: power_flow.battery.charge as f32,
+                    production: power_flow.battery.discharge as f32,
                 },
             }
         }

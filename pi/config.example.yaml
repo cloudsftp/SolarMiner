@@ -6,6 +6,7 @@ communication:
 controller:
     controller_interval: 10s
     sensor_data_update_interval: 5s
+    sensor_data_outdated_interval: 1min
     switch_debounce_duration: 30s
     miner_demand: 30
     battery_low_threshold: 10.

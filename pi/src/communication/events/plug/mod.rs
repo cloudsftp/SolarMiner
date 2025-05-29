@@ -76,13 +76,19 @@ pub fn decode_plug_message(topic_parts: &[&str], message: &Message) -> Result<Up
             UpdateEvent::PlugStateUpdate { device, on }
         }
         [_location @ .., device, "STATUS8"] => {
-            let status8: Status8 = serde_json::from_slice(&message.payload)?;
             let Status8Energy {
                 total,
                 yesterday,
                 today,
                 power,
-            } = status8.status_sns.energy;
+            } = serde_json::from_slice::<Status8>(&message.payload)
+                .context(format!(
+                    "could not decode payload '{}' received on subject '{}'",
+                    String::from_utf8_lossy(&message.payload),
+                    message.subject,
+                ))?
+                .status_sns
+                .energy;
 
             UpdateEvent::PlugEnergyUpdate {
                 device: device.to_string(),
