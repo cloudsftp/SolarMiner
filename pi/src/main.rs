@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use anyhow::{Context as AnyhowContext, Error};
 use config::Config;
 use controller::Controller;
@@ -32,11 +34,13 @@ impl App {
         comm.create_service_streams().await?;
         let mut update_events = comm.get_update_events().await?;
 
-        let create_action_interval = || -> Result<_, Error> {
+        let create_action_interval = |offset: u64| -> Result<_, Error> {
             let mut interval = interval_at(
                 Instant::now()
                     .checked_add(CONFIG.controller.sensor_data_update_interval)
-                    .context("Controller start time not in range")?,
+                    .context("Action interval start time not in range")?
+                    .checked_add(Duration::from_secs(offset))
+                    .context("Action interval start time not in range")?,
                 CONFIG.controller.controller_interval,
             );
             interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
@@ -44,8 +48,8 @@ impl App {
             Ok(interval)
         };
 
-        let mut perform_control_action = create_action_interval()?;
-        let mut report_state = create_action_interval()?;
+        let mut perform_control_action = create_action_interval(0)?;
+        let mut report_state = create_action_interval(1)?;
 
         let create_sensor_data_update_interval = || {
             let mut interval = interval(CONFIG.controller.sensor_data_update_interval);
