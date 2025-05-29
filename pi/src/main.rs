@@ -9,7 +9,7 @@ use log::{error, info};
 use once_cell::sync::Lazy;
 use tokio::{
     signal::unix::{self, SignalKind},
-    time::{Instant, interval, interval_at},
+    time::{Instant, MissedTickBehavior, interval, interval_at},
 };
 
 mod communication;
@@ -18,11 +18,11 @@ mod controller;
 mod state;
 
 use communication::Communication;
-use state::State;
+use state::PartialState;
 
 #[derive(Debug)]
 struct App {
-    state: State,
+    state: PartialState,
     controller: Controller,
 }
 
@@ -32,43 +32,65 @@ static CONFIG: Lazy<Config> =
 impl App {
     async fn run(mut self, comm: Communication) -> Result<(), Error> {
         comm.create_service_streams().await?;
-        let mut pi_messages = comm.subscribe_to_smart_home().await?;
+        let mut update_events = comm.get_update_events().await?;
 
-        let mut controlling_interval = interval_at(
-            Instant::now()
-                .checked_add(Duration::from_secs_f32(
-                    CONFIG.controller.sensor_data_update_interval,
-                ))
-                .context("Controller start time not in range")?,
-            Duration::from_secs_f32(CONFIG.controller.controller_time),
-        );
+        let create_action_interval = |offset: u64| -> Result<_, Error> {
+            let mut interval = interval_at(
+                Instant::now()
+                    .checked_add(CONFIG.controller.sensor_data_update_interval)
+                    .context("Action interval start time not in range")?
+                    .checked_add(Duration::from_secs(offset))
+                    .context("Action interval start time not in range")?,
+                CONFIG.controller.controller_interval,
+            );
+            interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
-        let mut sensor_data_update_interval = interval(Duration::from_secs_f32(
-            CONFIG.controller.sensor_data_update_interval,
-        ));
+            Ok(interval)
+        };
 
-        // TODO: also listen to
-        // - timer for aggregating power data and sending it out
+        let mut perform_control_action = create_action_interval(0)?;
+        let mut report_state = create_action_interval(1)?;
+
+        let create_sensor_data_update_interval = || {
+            let mut interval = interval(CONFIG.controller.sensor_data_update_interval);
+            interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
+
+            interval
+        };
+
+        let mut query_miner_state = create_sensor_data_update_interval();
+        let mut query_inverter_state = create_sensor_data_update_interval();
+
         loop {
             tokio::select! {
-                Some(message) = pi_messages.next() => {
-                    if let Err(err) = self.state.update(&message).await {
+                _ = query_inverter_state.tick() => {
+                    // TODO: implement reading from modbus and then sending update on a update_events channel
+                }
+                _ = query_miner_state.tick() => {
+                    if let Err(err) = comm.query_plug_state().await {
+                        error!("Errored while querying the plug state: {}", err);
+                        continue;
+                    }
+                }
+                // TODO: instead create update_events stream and listen to that
+                // that stream icludes pi_messages mapped to UpdateEvents
+                // and inverter queries also mapped to update events
+                Some(update_event) = update_events.next() => {
+                    if let Err(err) = self.state.update(update_event).await {
                         // TODO: send out error message and continue
                         error!("Errored while updating the state: {}", err);
                         continue;
                     }
                 }
-                _ = controlling_interval.tick() => {
+                _ = perform_control_action.tick() => {
                     if let Err(err) = self.controller.perform_action(&self.state, &comm).await {
                         error!("Errored while flipping the miner plug: {}", err);
                         continue;
                     }
                 }
-                _ = sensor_data_update_interval.tick() => {
-                    if let Err(err) = comm.query_plug_state().await {
-                        error!("Errored while querying the plug state: {}", err);
-                        continue;
-                    }
+                _ = report_state.tick() => {
+                    // Implement reporting
+                    ()
                 }
             }
         }
@@ -78,7 +100,7 @@ impl App {
 impl App {
     fn new() -> Self {
         App {
-            state: State::new(),
+            state: PartialState::new(),
             controller: Controller::new(),
         }
     }

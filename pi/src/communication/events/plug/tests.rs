@@ -23,33 +23,6 @@ fn command_results_decoding() {
             payload: json!({"POWER": "OFF"}),
             expected: CommandResult::Power(PlugStateValue::Off),
         },
-        TestCase {
-            name: "energy usage query \"EnergyTotal\"",
-            payload: json!({"EnergyTotal": {"total": 3., "yesterday": 2., "today": 1.}}),
-            expected: CommandResult::EnergyConsumption {
-                total: 3.,
-                yesterday: 2.,
-                today: 1.,
-            },
-        },
-        TestCase {
-            name: "energy usage query \"EnergyYesterday\"",
-            payload: json!({"EnergyYesterday": {"total": 3., "yesterday": 2., "today": 1.}}),
-            expected: CommandResult::EnergyConsumption {
-                total: 3.,
-                yesterday: 2.,
-                today: 1.,
-            },
-        },
-        TestCase {
-            name: "energy usage query \"EnergyToday\"",
-            payload: json!({"EnergyToday": {"total": 3., "yesterday": 2., "today": 1.}}),
-            expected: CommandResult::EnergyConsumption {
-                total: 3.,
-                yesterday: 2.,
-                today: 1.,
-            },
-        },
     ];
 
     for TestCase {
@@ -121,20 +94,42 @@ fn update_events() {
 }
 
 #[test]
-fn battery_state() {
-    let file =
-        File::open("data/solaredge/battery_discharging_99.json").expect("could not open file");
+fn status8() {
+    struct TestCase<'a> {
+        name: &'a str,
+        payload_file_name: &'a str,
+        expected: Status8,
+    }
 
-    let battery_state: BatteryState =
-        serde_json::from_reader(file).expect("could not decode battery state");
-
-    dbg!(&battery_state);
-
-    assert_eq!(
-        BatteryState {
-            status: BatteryStatus::Discharging,
-            state_of_charge: 98.89,
+    let test_cases = [TestCase {
+        name: "discharging",
+        payload_file_name: "data/plug/status8_bitaxe_on.json",
+        expected: Status8 {
+            status_sns: StatusSNS {
+                energy: Status8Energy {
+                    total: 0.1732,
+                    yesterday: 0.0,
+                    today: 0.1732,
+                    power: 26.4,
+                },
+            },
         },
-        battery_state
-    )
+    }];
+
+    for TestCase {
+        name,
+        payload_file_name,
+        expected,
+    } in test_cases
+    {
+        let file = File::open(payload_file_name)
+            .expect(&format!("could not open file '{}'", payload_file_name));
+
+        let status8: Status8 = serde_json::from_reader(file).expect(&format!(
+            "could not decode status8 from file '{}'",
+            payload_file_name
+        ));
+
+        assert_eq!(status8, expected, "in test case '{}'", name)
+    }
 }

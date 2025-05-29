@@ -1,19 +1,15 @@
-mod events;
-
 use anyhow::{Error, anyhow};
-use async_nats::Message;
-use events::UpdateEvent;
 use log::debug;
 
 use crate::{
     CONFIG,
-    state::{EnergyState, PlugState, PowerData, State},
+    communication::events::UpdateEvent,
+    state::{EnergyState, PartialState, PowerData},
 };
 
-impl State {
-    pub async fn update(&mut self, message: &Message) -> Result<(), Error> {
-        let update = UpdateEvent::try_from(message)?;
-        match update {
+impl PartialState {
+    pub async fn update(&mut self, update: Result<UpdateEvent, Error>) -> Result<(), Error> {
+        match update? {
             UpdateEvent::PlugStateUpdate { device, on } => {
                 if device != CONFIG.communication.plug_name {
                     return Err(anyhow!(
@@ -22,16 +18,14 @@ impl State {
                     ));
                 }
 
-                self.plug.state = match on {
-                    true => PlugState::On,
-                    false => PlugState::Off,
-                }
+                self.plug.on.set(on)
             }
             UpdateEvent::PlugEnergyUpdate {
                 device,
                 total,
                 yesterday,
                 today,
+                power,
             } => {
                 if device != CONFIG.communication.plug_name {
                     return Err(anyhow!(
@@ -40,19 +34,20 @@ impl State {
                     ));
                 }
 
-                self.plug.energy = Some(EnergyState {
+                self.plug.energy.set(EnergyState {
                     total,
                     yesterday,
                     today,
-                })
+                    power,
+                });
             }
-            UpdateEvent::PowerUpdate {
+            UpdateEvent::SolarPowerUpdate {
                 pv_production,
                 house_demand,
                 grid,
                 battery,
             } => {
-                self.power = Some(PowerData {
+                self.inverter.power.set(PowerData {
                     from_pv: pv_production,
                     from_battery: battery.production,
                     from_grid: grid.demand,
@@ -62,7 +57,7 @@ impl State {
                 });
             }
             UpdateEvent::BatteryUpdate { level } => {
-                self.battery_level = Some(level);
+                self.inverter.battery_level.set(level);
             }
             UpdateEvent::Unknown { subject, payload } => {
                 debug!(

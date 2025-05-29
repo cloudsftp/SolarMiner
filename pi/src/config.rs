@@ -1,6 +1,7 @@
 use anyhow::{Context as AnyhowContext, Error};
+use duration_str::deserialize_duration;
 use serde::Deserialize;
-use std::{fs::File, io::BufReader};
+use std::{fs::File, io::BufReader, time::Duration};
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
@@ -17,10 +18,15 @@ pub struct CommunicationConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct ControllerConfig {
-    pub controller_time: f32,
-    pub sensor_data_update_interval: f32,
-    pub switch_debounce_duration: f32,
-    pub miner_demand: usize,
+    #[serde(deserialize_with = "deserialize_duration")]
+    pub controller_interval: Duration,
+    #[serde(deserialize_with = "deserialize_duration")]
+    pub sensor_data_update_interval: Duration,
+    #[serde(deserialize_with = "deserialize_duration")]
+    pub sensor_data_outdated_interval: Duration,
+    #[serde(deserialize_with = "deserialize_duration")]
+    pub switch_debounce_duration: Duration,
+    pub miner_demand: f32,
     pub battery_low_threshold: f32,
     pub battery_high_threshold: f32,
 }

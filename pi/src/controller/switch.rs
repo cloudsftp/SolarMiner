@@ -9,9 +9,9 @@ pub struct DampenedSwitch {
 }
 
 impl DampenedSwitch {
-    pub fn new(time_to_switch: f32) -> Self {
+    pub fn new(time_to_switch: Duration) -> Self {
         Self {
-            time_to_switch: Duration::from_secs_f32(time_to_switch),
+            time_to_switch,
             command: false,
             received_since: Instant::now(),
         }

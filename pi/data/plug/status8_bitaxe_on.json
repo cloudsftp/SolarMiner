@@ -1,0 +1,21 @@
+{
+  "StatusSNS": {
+    "Time": "2025-05-28T12:59:56",
+    "ENERGY": {
+      "TotalStartTime": "2025-05-22T18:27:52",
+      "Total": 0.1732,
+      "Yesterday": 0.0,
+      "Today": 0.1732,
+      "Power": 26.4,
+      "ApparentPower": 45.369,
+      "ReactivePower": 36.9,
+      "Factor": 0.58,
+      "Voltage": 230,
+      "Current": 0.197
+    },
+    "ESP32": {
+      "Temperature": 68.6
+    },
+    "TempUnit": "C"
+  }
+}
