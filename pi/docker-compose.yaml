@@ -3,7 +3,7 @@ services:
     image: ghcr.io/cloudsftp/solarminer-controller:latest-arm64
     volumes:
       - ./.env:/.env
-      - ./config.json:/config.json
+      - ./config.yaml:/config.yaml
     depends_on:
       nats:
         condition: service_started
