@@ -81,7 +81,7 @@ impl PartialState {
 
 impl PartialState {
     pub fn mining_condition(&self) -> bool {
-        match self.inverter.battery_level.get() {
+        match self.inverter.battery_level.get_or_default() {
             level if level > CONFIG.controller.battery_high_threshold => true,
             level if level > CONFIG.controller.battery_low_threshold => {
                 self.production_satisfies_miner()
@@ -93,23 +93,24 @@ impl PartialState {
     fn production_satisfies_miner(&self) -> bool {
         let PowerData {
             from_pv, to_house, ..
-        } = self.inverter.power.get();
+        } = self.inverter.power.get_or_default();
 
         (from_pv - to_house) as f32 > self.miner_demand()
     }
 
     fn miner_demand(&self) -> f32 {
-        if self.plug.on.get() {
-            self.plug.energy.get().power
+        if self.plug.on.get_or_default() {
+            self.plug.energy.get_or_default().power
         } else {
             0.
         }
     }
 
     pub fn should_skip_send_plug_command(&self, desired: bool) -> bool {
-        match self.plug.on.try_get() {
-            Ok(current) => current.map(|current| current == desired).unwrap_or(false),
-            Err(_) => false,
-        }
+        self.plug
+            .on
+            .get_option()
+            .map(|current| current == desired)
+            .unwrap_or(false)
     }
 }

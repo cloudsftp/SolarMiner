@@ -35,22 +35,26 @@ where
         self.last_update.duration_since(self.last_update) > self.timeout
     }
 
-    pub fn get(&self) -> T {
+    pub fn get_or_default(&self) -> T {
         (!self.outdated())
             .then_some(self.value.clone())
             .flatten()
             .unwrap_or(self.default.clone())
     }
 
+    pub fn get_option(&self) -> Option<T> {
+        if self.outdated() {
+            return None;
+        }
+
+        self.value.clone()
+    }
+
     // TODO: implement errors with thiserror?
     // - not initialized               -> ignore
     // - not initialized > timeout     -> error
     // - value outdated                -> error
-    pub fn try_get(&self) -> Result<Option<T>, Error> {
-        if self.outdated() {
-            return Err(anyhow!("value is outdated"));
-        }
-
-        Ok(self.value.clone())
+    pub fn try_get(&self) -> Result<T, Error> {
+        todo!()
     }
 }
