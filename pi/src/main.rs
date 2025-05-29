@@ -57,8 +57,6 @@ impl App {
         let mut query_miner_state = create_sensor_data_update_interval();
         let mut query_inverter_state = create_sensor_data_update_interval();
 
-        // TODO: also listen to
-        // - timer for aggregating power data and sending it out
         loop {
             tokio::select! {
                 _ = query_inverter_state.tick() => {

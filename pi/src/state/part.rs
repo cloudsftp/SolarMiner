@@ -2,7 +2,7 @@ use anyhow::{Error, anyhow};
 use std::{fmt::Debug, time::Duration};
 use tokio::time::Instant;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub struct Part<T>
 where
     T: Debug + PartialEq + Clone,
@@ -32,7 +32,7 @@ where
     }
 
     fn outdated(&self) -> bool {
-        self.last_update.duration_since(self.last_update) > self.timeout
+        Instant::now().duration_since(self.last_update) > self.timeout
     }
 
     pub fn get_or_default(&self) -> T {
@@ -56,5 +56,24 @@ where
     // - value outdated                -> error
     pub fn try_get(&self) -> Result<T, Error> {
         todo!()
+    }
+}
+
+impl<T> Debug for Part<T>
+where
+    T: Debug + PartialEq + Clone,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.outdated() {
+            f.write_fmt(format_args!(
+                "outdated (since {:?})",
+                Instant::now().duration_since(self.last_update),
+            ))
+        } else {
+            match &self.value {
+                None => f.write_str("not initialized"),
+                Some(value) => Debug::fmt(&value, f),
+            }
+        }
     }
 }
