@@ -18,8 +18,8 @@ struct Config {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    env_logger::Builder::new().target(Target::Stdout).init();
     dotenv()?;
+    env_logger::init();
 
     let state_stream_name: &str = env::var("STATE_STREAM_NAME")?.leak();
     let controller_commands_stream_name: &str = env::var("CONTROLLER_COMMANDS_STREAM_NAME")?.leak();

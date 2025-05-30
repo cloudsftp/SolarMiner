@@ -1828,6 +1828,7 @@ dependencies = [
  "anyhow",
  "async-nats 0.38.0",
  "bytes",
+ "dotenv",
  "env_logger",
  "futures-util",
  "log",

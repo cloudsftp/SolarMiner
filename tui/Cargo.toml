@@ -14,3 +14,4 @@ serde_json = "1.0.140"
 tokio = { version = "1.45.1", features = ["rt-multi-thread"] }
 env_logger = "0.11.8"
 nats-common = { git = "https://github.com/cloudsftp/nats-common.git", branch = "latest" }
+dotenv = "0.15.0"

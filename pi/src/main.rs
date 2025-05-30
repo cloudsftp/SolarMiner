@@ -109,8 +109,8 @@ impl App {
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
-    env_logger::Builder::new().target(Target::Stdout).init();
     dotenv()?;
+    env_logger::init();
 
     let comm = Communication::connect()
         .await
