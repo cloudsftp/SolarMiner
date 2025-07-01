@@ -12,7 +12,7 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 pub struct CommunicationConfig {
     pub state_stream_name: String,
-    pub controller_commands_stream_name: String,
+    pub commands_stream_name: String,
     pub plug_name: String,
 }
 

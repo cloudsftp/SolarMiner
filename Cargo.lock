@@ -1808,13 +1808,14 @@ name = "solarminer-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "async-nats 0.38.0",
+ "async-nats 0.41.0",
  "bytes",
  "dotenv",
  "env_logger",
+ "futures",
  "futures-util",
  "log",
- "nats-common",
+ "once_cell",
  "reqwest",
  "serde",
  "serde_json",

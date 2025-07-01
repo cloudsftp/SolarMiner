@@ -6,7 +6,7 @@ use async_nats::{
         stream::{self, Info},
     },
 };
-use std::env;
+use std::{env, time::Duration};
 
 use super::Communication;
 use crate::CONFIG;
@@ -19,16 +19,6 @@ impl Communication {
         let server_js = jetstream::new(server_nats);
 
         Ok(Self { pi_nats, server_js })
-    }
-
-    pub async fn create_service_streams(&self) -> Result<Info, Error> {
-        self.server_js
-            .create_or_update_stream(stream::Config {
-                name: CONFIG.communication.state_stream_name.clone(),
-                ..Default::default()
-            })
-            .await
-            .context("Could not create the state stream for the service")
     }
 }
 

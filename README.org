@@ -32,6 +32,7 @@ docker compose up -d
 In pi run
 
 #+begin_src shell
+source .env
 cargo run
 #+end_src
 
@@ -40,5 +41,6 @@ cargo run
 In server run
 
 #+begin_src shell
+source .env
 cargo run
 #+end_src
