@@ -33,10 +33,7 @@ impl Communication {
             )
             .await?;
 
-        Ok(Self {
-            js,
-            streams: super::Streams {},
-        })
+        Ok(Self { js })
     }
 
     // TODO: return infos?

@@ -32,7 +32,6 @@ static CONFIG: Lazy<Config> =
 
 impl App {
     async fn run(mut self, comm: Communication) -> Result<(), Error> {
-        comm.create_service_streams().await?;
         let mut update_events = comm.get_update_events().await?;
 
         let create_action_interval = |offset: u64| -> Result<_, Error> {
