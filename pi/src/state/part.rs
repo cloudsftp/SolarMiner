@@ -1,4 +1,4 @@
-use anyhow::{Error, anyhow};
+use anyhow::Error;
 use std::{fmt::Debug, time::Duration};
 use tokio::time::Instant;
 

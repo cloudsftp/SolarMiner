@@ -90,7 +90,10 @@ impl App {
                 }
                 _ = report_state.tick() => {
                     // Implement reporting
-                    ()
+                    if let Err(err) = comm.report_state(&self.state).await {
+                        error!("Errored while reporting the state: {}", err);
+                        continue;
+                    }
                 }
             }
         }

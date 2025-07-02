@@ -1,12 +1,14 @@
 mod initialization;
 
-use anyhow::{Error, anyhow};
+use anyhow::Error;
 use async_nats::jetstream::{
     Context, Message,
     consumer::{Consumer, pull::Config},
 };
 use futures::TryStreamExt;
-use futures_util::{Stream, StreamExt, TryFutureExt};
+use futures_util::{Stream, StreamExt};
+
+use crate::events::StateUpdateEvent;
 
 #[derive(Debug, Clone)]
 pub struct Communication {
@@ -16,8 +18,6 @@ pub struct Communication {
 
 #[derive(Debug, Clone)]
 struct Streams {}
-
-struct StateUpdateEvent {}
 
 impl TryFrom<Message> for StateUpdateEvent {
     type Error = Error;

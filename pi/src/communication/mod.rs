@@ -5,9 +5,10 @@ use anyhow::{Context as AnyhowContext, Error};
 use async_nats::{Client, Message, jetstream::Context};
 use events::UpdateEvent;
 use futures::{Stream, StreamExt, future::try_join_all, stream::select_all};
+use log::debug;
 use once_cell::sync::Lazy;
 
-use crate::CONFIG;
+use crate::{CONFIG, state::PartialState};
 
 const PLUG_TOPICS: &[&str] = &["stat.*.RESULT", "stat.*.STATUS8"];
 const SOLAREDGE_TOPICS: &[&str] = &["solaredge.modbus.battery.battery0", "solaredge.powerflow"];
@@ -66,6 +67,17 @@ impl Communication {
             .publish(
                 format!("cmnd.{}.POWER", CONFIG.communication.plug_name),
                 payload,
+            )
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn report_state(&self, state: &PartialState) -> Result<(), Error> {
+        self.server_js
+            .publish(
+                CONFIG.communication.state_stream_name.clone(),
+                "state".into(),
             )
             .await?;
 
