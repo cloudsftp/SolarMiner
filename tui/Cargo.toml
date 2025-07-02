@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.98"
-async-nats = "0.38.0"
+async-nats = { version = "0.42.0", features = ["server_2_11"] }
 bytes = "1.10.1"
 futures-util = "0.3.31"
 log = "0.4.27"
@@ -13,5 +13,4 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 tokio = { version = "1.45.1", features = ["rt-multi-thread"] }
 env_logger = "0.11.8"
-nats-common = { git = "https://github.com/cloudsftp/nats-common.git", branch = "latest" }
 dotenv = "0.15.0"

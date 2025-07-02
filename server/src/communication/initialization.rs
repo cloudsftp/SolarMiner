@@ -33,7 +33,10 @@ impl Communication {
             )
             .await?;
 
-        Ok(Self { js })
+        Ok(Self {
+            js,
+            state_stream_consumer,
+        })
     }
 
     // TODO: return infos?

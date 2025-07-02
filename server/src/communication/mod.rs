@@ -1,12 +1,17 @@
 mod initialization;
 
-use anyhow::Error;
-use async_nats::jetstream::{Context, Message, consumer::Consumer};
-use futures::{Stream, StreamExt};
+use anyhow::{Error, anyhow};
+use async_nats::jetstream::{
+    Context, Message,
+    consumer::{Consumer, pull::Config},
+};
+use futures::TryStreamExt;
+use futures_util::{Stream, StreamExt, TryFutureExt};
 
 #[derive(Debug, Clone)]
 pub struct Communication {
     js: Context,
+    state_stream_consumer: Consumer<Config>,
 }
 
 #[derive(Debug, Clone)]
@@ -14,25 +19,23 @@ struct Streams {}
 
 struct StateUpdateEvent {}
 
-impl TryFrom<&Message> for StateUpdateEvent {
+impl TryFrom<Message> for StateUpdateEvent {
     type Error = Error;
 
-    fn try_from(value: &Message) -> Result<Self, Self::Error> {
+    fn try_from(value: Message) -> Result<Self, Self::Error> {
         todo!()
     }
 }
 
 impl Communication {
-    /*
     pub async fn get_state_events(
         &self,
     ) -> Result<impl Stream<Item = Result<StateUpdateEvent, Error>>, Error> {
-        let state_messages = self.subscribe_to_state_updates().await?;
-        Ok(state_messages.map(|message| StateUpdateEvent::try_from(&message)))
+        Ok(self
+            .state_stream_consumer
+            .messages()
+            .await?
+            .map_err(Error::from)
+            .map(|message| message.and_then(StateUpdateEvent::try_from)))
     }
-
-    async fn subscribe_to_state_updates(&self) -> Result<impl Stream<Item = Message>, Error> {
-        self.state_consumer.messages().await
-    }
-     */
 }
