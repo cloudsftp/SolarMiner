@@ -1708,6 +1708,7 @@ dependencies = [
  "serde_plain",
  "serde_repr",
  "serde_yaml",
+ "solarminer-service",
  "tokio",
 ]
 

@@ -74,12 +74,18 @@ impl Communication {
     }
 
     pub async fn report_state(&self, state: &PartialState) -> Result<(), Error> {
-        self.server_js
-            .publish(
-                CONFIG.communication.state_stream_name.clone(),
-                "state".into(),
-            )
-            .await?;
+        let update_events = state.get_state_update_events();
+
+        for event in update_events {
+            self.server_js
+                .publish(
+                    CONFIG.communication.state_stream_name.clone(),
+                    serde_json::to_vec(&event)
+                        .context("could not serialize update event")?
+                        .into(),
+                )
+                .await?;
+        }
 
         Ok(())
     }

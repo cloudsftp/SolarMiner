@@ -1,4 +1,5 @@
 mod part;
+mod reporting;
 mod update;
 
 #[cfg(test)]

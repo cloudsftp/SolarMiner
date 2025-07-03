@@ -1,6 +1,6 @@
 mod initialization;
 
-use anyhow::Error;
+use anyhow::{Context as _, Error};
 use async_nats::jetstream::{
     Context, Message,
     consumer::{Consumer, pull::Config},
@@ -23,7 +23,7 @@ impl TryFrom<Message> for StateUpdateEvent {
     type Error = Error;
 
     fn try_from(value: Message) -> Result<Self, Self::Error> {
-        todo!()
+        serde_json::from_slice(&value.payload).context("could not decode update event")
     }
 }
 

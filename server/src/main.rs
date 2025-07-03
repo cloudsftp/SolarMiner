@@ -21,13 +21,9 @@ static CONFIG: Lazy<Config> = Lazy::new(|| config::load().expect("could not load
 
 impl App {
     async fn run(mut self, comm: Communication) -> Result<(), Error> {
-        debug!("hello");
-        let comm = Communication::connect().await?;
-
         let mut state_events = comm.get_state_events().await?;
 
         while let Some(state_event) = state_events.next().await {
-            debug!("hell yeah");
             dbg!(state_event);
         }
 
