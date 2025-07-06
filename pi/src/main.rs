@@ -4,7 +4,6 @@ use anyhow::{Context as AnyhowContext, Error};
 use config::Config;
 use controller::Controller;
 use dotenv::dotenv;
-use env_logger::Target;
 use futures::StreamExt;
 use log::{error, info};
 use once_cell::sync::Lazy;
@@ -68,7 +67,7 @@ impl App {
                 }
                 _ = query_miner_state.tick() => {
                     if let Err(err) = comm.query_plug_state().await {
-                        error!("Errored while querying the plug state: {}", err);
+                        error!("Errored while querying the plug state: {err}");
                         continue;
                     }
                 }
@@ -78,20 +77,20 @@ impl App {
                 Some(update_event) = update_events.next() => {
                     if let Err(err) = self.state.update(update_event).await {
                         // TODO: send out error message and continue
-                        error!("Errored while updating the state: {}", err);
+                        error!("Errored while updating the state: {err}");
                         continue;
                     }
                 }
                 _ = perform_control_action.tick() => {
                     if let Err(err) = self.controller.perform_action(&self.state, &comm).await {
-                        error!("Errored while flipping the miner plug: {}", err);
+                        error!("Errored while flipping the miner plug: {err}");
                         continue;
                     }
                 }
                 _ = report_state.tick() => {
                     // Implement reporting
                     if let Err(err) = comm.report_state(&self.state).await {
-                        error!("Errored while reporting the state: {}", err);
+                        error!("Errored while reporting the state: {err}");
                         continue;
                     }
                 }
@@ -130,10 +129,10 @@ async fn main() -> Result<(), Error> {
                     info!("Main task exited successfully")
                 },
                 Ok(Err(err)) => {
-                    error!("Main task errored: {}", err)
+                    error!("Main task errored: {err}")
                 },
                 Err(err) => {
-                    error!("Could not join main task: {}", err)
+                    error!("Could not join main task: {err}")
                 },
             }
         }

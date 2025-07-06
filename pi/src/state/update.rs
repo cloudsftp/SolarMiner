@@ -68,7 +68,7 @@ impl PartialState {
             }
         };
 
-        debug!("Updated state: {:?}", self);
+        debug!("Updated state: {self:?}");
         Ok(())
     }
 }

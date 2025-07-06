@@ -2,7 +2,7 @@ use anyhow::{Context, Error};
 use config::Config;
 use dotenv::dotenv;
 use futures::StreamExt;
-use log::{debug, error, info};
+use log::{error, info};
 use once_cell::sync::Lazy;
 use tokio::signal::unix::{self, SignalKind};
 
@@ -20,7 +20,7 @@ struct App {
 static CONFIG: Lazy<Config> = Lazy::new(|| config::load().expect("could not load config"));
 
 impl App {
-    async fn run(mut self, comm: Communication) -> Result<(), Error> {
+    async fn run(self, comm: Communication) -> Result<(), Error> {
         let mut state_events = comm.get_state_events().await?;
 
         while let Some(state_event) = state_events.next().await {
@@ -60,10 +60,10 @@ async fn main() -> Result<(), Error> {
                     info!("Main task exited successfully")
                 },
                 Ok(Err(err)) => {
-                    error!("Main task errored: {}", err)
+                    error!("Main task errored: {err}")
                 },
                 Err(err) => {
-                    error!("Could not join main task: {}", err)
+                    error!("Could not join main task: {err}")
                 },
             }
         }

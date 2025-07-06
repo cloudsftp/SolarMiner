@@ -103,7 +103,7 @@ impl PartialState {
         if self.plug.on.get_or_default() {
             0.
         } else {
-            CONFIG.controller.miner_demand as f32
+            CONFIG.controller.miner_demand
         }
     }
 

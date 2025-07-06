@@ -1,15 +1,8 @@
 use anyhow::{Context as AnyhowContext, Error};
-use async_nats::{
-    Client, ConnectOptions,
-    jetstream::{
-        self,
-        stream::{self, Info},
-    },
-};
-use std::{env, time::Duration};
+use async_nats::{Client, ConnectOptions, jetstream};
+use std::env;
 
 use super::Communication;
-use crate::CONFIG;
 
 impl Communication {
     pub async fn connect() -> Result<Self, Error> {
@@ -23,18 +16,18 @@ impl Communication {
 }
 
 async fn connect_nats_client(prefix: &str) -> Result<Client, Error> {
-    let get_env = |name| get_env(&format!("{}_{}", prefix, name));
+    let get_env = |name| get_env(&format!("{prefix}_{name}"));
 
     let host = get_env("NATS_HOST")?;
     let port = get_env("NATS_PORT")?;
     let options = ConnectOptions::new().token(get_env("NATS_TOKEN")?);
 
     options
-        .connect(format!("{}:{}", host, port))
+        .connect(format!("{host}:{port}"))
         .await
-        .context(format!("Could not connect to nats server '{}'", prefix))
+        .context(format!("Could not connect to nats server '{prefix}'"))
 }
 
 fn get_env(key: &str) -> Result<String, Error> {
-    env::var(key).context(format!("could not get value for key '{}'", key))
+    env::var(key).context(format!("could not get value for key '{key}'"))
 }

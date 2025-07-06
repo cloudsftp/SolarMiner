@@ -70,7 +70,7 @@ async fn connect_nats_client(prefix: &str) -> Result<Client, Error> {
         ConnectOptions::new().token(env::var("NATS_TOKEN").context("reading NATS_TOKEN")?);
 
     options
-        .connect(format!("{}:{}", host, port))
+        .connect(format!("{host}:{port}"))
         .await
-        .context(format!("Could not connect to nats server '{}'", prefix))
+        .context(format!("Could not connect to nats server '{prefix}'"))
 }

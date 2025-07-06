@@ -5,7 +5,6 @@ use anyhow::{Context as AnyhowContext, Error};
 use async_nats::{Client, Message, jetstream::Context};
 use events::UpdateEvent;
 use futures::{Stream, StreamExt, future::try_join_all, stream::select_all};
-use log::debug;
 use once_cell::sync::Lazy;
 
 use crate::{CONFIG, state::PartialState};
