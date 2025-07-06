@@ -38,8 +38,6 @@ impl Communication {
             state_stream_consumer,
         })
     }
-
-    // TODO: return infos?
 }
 
 async fn create_service_streams(js: &Context) -> Result<(), Error> {
