@@ -16,9 +16,6 @@ pub struct Communication {
     state_stream_consumer: Consumer<Config>,
 }
 
-#[derive(Debug, Clone)]
-struct Streams {}
-
 impl TryFrom<Message> for StateUpdateEvent {
     type Error = Error;
 

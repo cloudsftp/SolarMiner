@@ -1,6 +1,6 @@
 communication:
     state_stream_name: controller-state
-    controller_commands_stream_name: controller-commands
+    commands_stream_name: controller-commands
     plug_name: plug_bitaxe_001
 
 controller:

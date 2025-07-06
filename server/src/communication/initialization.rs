@@ -29,7 +29,7 @@ impl Communication {
                     durable_name: Some("service".to_string()),
                     ..Default::default()
                 },
-                CONFIG.state_stream_name,
+                &CONFIG.state_stream_name,
             )
             .await?;
 
@@ -57,7 +57,7 @@ async fn create_service_streams(js: &Context) -> Result<(), Error> {
         ..Default::default()
     })
     .await
-    .context("Could not create the state stream for the service")?;
+    .context("Could not create the commands stream for the service")?;
 
     Ok(())
 }
