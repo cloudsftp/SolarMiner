@@ -33,9 +33,9 @@ fn command_results_decoding() {
     {
         let payload = payload.to_string();
         let decoded: CommandResult = serde_json::from_str(&payload)
-            .expect(format!("could not decode payload in test case '{}'", name).as_str());
+            .unwrap_or_else(|_| panic!("could not decode payload in test case '{name}'"));
 
-        assert_eq!(decoded, expected, "test case '{}'", name);
+        assert_eq!(decoded, expected, "test case '{name}'");
     }
 }
 
@@ -87,9 +87,9 @@ fn update_events() {
         };
 
         let decoded = UpdateEvent::try_from(&message)
-            .expect(format!("could not decode event in test case '{}'", name).as_str());
+            .unwrap_or_else(|_| panic!("could not decode event in test case '{name}'"));
 
-        assert_eq!(decoded, expected, "in test case '{}'", name);
+        assert_eq!(decoded, expected, "in test case '{name}'");
     }
 }
 
@@ -123,13 +123,10 @@ fn status8() {
     } in test_cases
     {
         let file = File::open(payload_file_name)
-            .expect(&format!("could not open file '{}'", payload_file_name));
+            .unwrap_or_else(|_| panic!("could not open file '{payload_file_name}'"));
 
-        let status8: Status8 = serde_json::from_reader(file).expect(&format!(
-            "could not decode status8 from file '{}'",
-            payload_file_name
-        ));
+        let status8: Status8 = serde_json::from_reader(file).unwrap_or_else(|_| panic!("could not decode status8 from file '{payload_file_name}'"));
 
-        assert_eq!(status8, expected, "in test case '{}'", name)
+        assert_eq!(status8, expected, "in test case '{name}'")
     }
 }

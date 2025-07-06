@@ -36,13 +36,10 @@ fn battery_state() {
     } in test_cases
     {
         let file = File::open(payload_file_name)
-            .expect(&format!("could not open file '{}'", payload_file_name));
+            .unwrap_or_else(|_| panic!("could not open file '{payload_file_name}'"));
 
-        let battery_state: BatteryState = serde_json::from_reader(file).expect(&format!(
-            "could not decode battery state from file '{}'",
-            payload_file_name
-        ));
+        let battery_state: BatteryState = serde_json::from_reader(file).unwrap_or_else(|_| panic!("could not decode battery state from file '{payload_file_name}'"));
 
-        assert_eq!(battery_state, expected, "in test case '{}'", name)
+        assert_eq!(battery_state, expected, "in test case '{name}'")
     }
 }

@@ -35,6 +35,10 @@ where
         Instant::now().duration_since(self.last_update) > self.timeout
     }
 
+    fn initialized(&self) -> bool {
+        self.value.is_some()
+    }
+
     pub fn get_or_default(&self) -> T {
         (!self.outdated())
             .then_some(self.value.clone())
@@ -55,7 +59,15 @@ where
     // - not initialized > timeout     -> error
     // - value outdated                -> error
     pub fn try_get(&self) -> Result<T, Error> {
-        todo!()
+        if self.outdated() {
+            return Err(anyhow!("state outdated"));
+        }
+
+        if !self.initialized() {
+            return Err(anyhow!("state not initialized"));
+        }
+
+        Ok(self.value.clone().unwrap())
     }
 }
 

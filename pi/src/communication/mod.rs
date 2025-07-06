@@ -7,7 +7,7 @@ use events::UpdateEvent;
 use futures::{Stream, StreamExt, future::try_join_all, stream::select_all};
 use once_cell::sync::Lazy;
 
-use crate::CONFIG;
+use crate::{CONFIG, state::PartialState};
 
 const PLUG_TOPICS: &[&str] = &["stat.*.RESULT", "stat.*.STATUS8"];
 const SOLAREDGE_TOPICS: &[&str] = &["solaredge.modbus.battery.battery0", "solaredge.powerflow"];
@@ -68,6 +68,23 @@ impl Communication {
                 payload,
             )
             .await?;
+
+        Ok(())
+    }
+
+    pub async fn report_state(&self, state: &PartialState) -> Result<(), Error> {
+        let update_events = state.get_state_update_events();
+
+        for event in update_events {
+            self.server_js
+                .publish(
+                    CONFIG.communication.state_stream_name.clone(),
+                    serde_json::to_vec(&event)
+                        .context("could not serialize update event")?
+                        .into(),
+                )
+                .await?;
+        }
 
         Ok(())
     }

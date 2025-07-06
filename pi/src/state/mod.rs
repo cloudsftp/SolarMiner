@@ -1,10 +1,10 @@
 mod part;
+mod reporting;
 mod update;
 
 #[cfg(test)]
 mod tests;
 
-use anyhow::{Context, Error};
 use part::Part;
 
 use crate::CONFIG;
@@ -13,6 +13,20 @@ use crate::CONFIG;
 pub struct PartialState {
     plug: PartialPlugState,
     inverter: PartialInverterState,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+struct PartialPlugState {
+    on: Part<bool>,
+    energy: Part<EnergyState>,
+}
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct EnergyState {
+    total: f32,
+    yesterday: f32,
+    today: f32,
+    power: f32,
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -29,20 +43,6 @@ struct PowerData {
     to_house: f32,
     to_battery: f32,
     to_grid: f32,
-}
-
-#[derive(Debug, PartialEq, Clone)]
-struct PartialPlugState {
-    on: Part<bool>,
-    energy: Part<EnergyState>,
-}
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct EnergyState {
-    total: f32,
-    yesterday: f32,
-    today: f32,
-    power: f32,
 }
 
 impl PartialState {
@@ -103,7 +103,7 @@ impl PartialState {
         if self.plug.on.get_or_default() {
             0.
         } else {
-            CONFIG.controller.miner_demand as f32
+            CONFIG.controller.miner_demand
         }
     }
 

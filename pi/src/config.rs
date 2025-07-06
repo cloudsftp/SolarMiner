@@ -12,7 +12,7 @@ pub struct Config {
 #[derive(Debug, Deserialize)]
 pub struct CommunicationConfig {
     pub state_stream_name: String,
-    pub controller_commands_stream_name: String,
+    pub commands_stream_name: String,
     pub plug_name: String,
 }
 
@@ -34,10 +34,10 @@ pub struct ControllerConfig {
 impl Config {
     pub fn from_file(file_name: &str) -> Result<Self, Error> {
         let config_file =
-            File::open(file_name).context(format!("Could not open config file '{}'", file_name))?;
+            File::open(file_name).context(format!("Could not open config file '{file_name}'"))?;
         let config_file = BufReader::new(config_file);
 
         serde_yaml::from_reader(config_file)
-            .context(format!("Could not parse config file '{}'", file_name))
+            .context(format!("Could not parse config file '{file_name}'"))
     }
 }

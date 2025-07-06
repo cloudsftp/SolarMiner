@@ -9,19 +9,19 @@ docker compose up -d
 *** Listen for results
 
 #+begin_src bash
-nats -s ${PI_NATS_HOST} --token ${PI_NATS_PASSWORD} sub "stat.*.RESULT"
+nats -s ${PI_NATS_HOST} --token ${PI_NATS_TOKEN} sub "stat.*.RESULT"
 #+end_src
 
 *** Query
 
 #+begin_src bash
-nats -s ${PI_NATS_HOST} --token ${PI_NATS_PASSWORD} pub "cmnd.plug_bitaxe_001.Power" ""
+nats -s ${PI_NATS_HOST} --token ${PI_NATS_TOKEN} pub "cmnd.plug_bitaxe_001.Power" ""
 #+end_src
 
 *** Toggle
 
 #+begin_src bash
-nats -s ${PI_NATS_HOST} --token ${PI_NATS_PASSWORD} pub "cmnd.plug_bitaxe_001.Power" "TOGGLE"
+nats -s ${PI_NATS_HOST} --token ${PI_NATS_TOKEN} pub "cmnd.plug_bitaxe_001.Power" "TOGGLE"
 #+end_src
 
 * Influx DB (not used)
