@@ -1,4 +1,3 @@
-use anyhow::{Error, anyhow};
 use std::{fmt::Debug, time::Duration};
 use tokio::time::Instant;
 
@@ -11,18 +10,20 @@ where
     last_update: Instant,
     default: T,
     timeout: Duration,
+    control_timeout: Duration,
 }
 
 impl<T> Part<T>
 where
     T: Debug + PartialEq + Clone,
 {
-    pub fn new(default: T, timeout: Duration) -> Self {
+    pub fn new(default: T, timeout: Duration, control_timeout: Duration) -> Self {
         Part {
             value: None,
             last_update: Instant::now(),
             default,
             timeout,
+            control_timeout,
         }
     }
 
@@ -31,44 +32,47 @@ where
         self.last_update = Instant::now();
     }
 
-    fn initialized(&self) -> bool {
-        self.value.is_some()
-    }
+    // fn initialized(&self) -> bool {
+    //     self.value.is_some()
+    // }
 
-    fn control_outdated(&self) -> bool {
-        Instant::now().duration_since(self.last_update) > self.timeout
-    }
-
-    pub fn get_control_or_default(&self) -> T {
-        (!self.control_outdated())
-            .then_some(self.value.clone())
-            .flatten()
-            .unwrap_or(self.default.clone())
+    fn outdated(&self) -> bool {
+        Instant::now().duration_since(self.last_update) > self.control_timeout
     }
 
     pub fn get_option(&self) -> Option<T> {
-        if self.control_outdated() {
-            return None;
-        }
+        (!self.outdated()).then(|| self.value.clone()).flatten()
+    }
 
-        self.value.clone()
+    fn control_outdated(&self) -> bool {
+        Instant::now().duration_since(self.last_update) > self.control_timeout
+    }
+
+    pub fn get_control_or_default(&self) -> T {
+        self.get_control_option().unwrap_or(self.default.clone())
+    }
+
+    fn get_control_option(&self) -> Option<T> {
+        (!self.control_outdated())
+            .then(|| self.value.clone())
+            .flatten()
     }
 
     // TODO: implement errors with thiserror?
     // - not initialized               -> ignore
     // - not initialized > timeout     -> error
     // - value outdated                -> error
-    pub fn try_get(&self) -> Result<T, Error> {
-        if self.control_outdated() {
-            return Err(anyhow!("state outdated"));
-        }
+    // pub fn try_control_get(&self) -> Result<T, Error> {
+    //     if self.control_outdated() {
+    //         return Err(anyhow!("state outdated"));
+    //     }
 
-        if !self.initialized() {
-            return Err(anyhow!("state not initialized"));
-        }
+    //     if !self.initialized() {
+    //         return Err(anyhow!("state not initialized"));
+    //     }
 
-        Ok(self.value.clone().unwrap())
-    }
+    //     Ok(self.value.clone().unwrap())
+    // }
 }
 
 impl<T> Debug for Part<T>

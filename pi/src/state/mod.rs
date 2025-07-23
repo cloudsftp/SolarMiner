@@ -47,11 +47,12 @@ struct PowerData {
 
 impl PartialState {
     pub fn new() -> Self {
-        let timeout = CONFIG.controller.sensor_data.control_duration;
+        let timeout = CONFIG.controller.sensor_data.update_interval;
+        let control_timeout = CONFIG.controller.sensor_data.control_duration;
 
         Self {
             plug: PartialPlugState {
-                on: Part::new(true, timeout),
+                on: Part::new(true, timeout, control_timeout),
                 energy: Part::new(
                     EnergyState {
                         total: 0.,
@@ -60,6 +61,7 @@ impl PartialState {
                         power: CONFIG.controller.miner.demand,
                     },
                     timeout,
+                    control_timeout,
                 ),
             },
             inverter: PartialInverterState {
@@ -73,8 +75,9 @@ impl PartialState {
                         to_grid: 0.,
                     },
                     timeout,
+                    control_timeout,
                 ),
-                battery_level: Part::new(0., timeout),
+                battery_level: Part::new(0., timeout, control_timeout),
             },
         }
     }
@@ -110,7 +113,7 @@ impl PartialState {
     pub fn should_skip_send_plug_command(&self, desired: bool) -> bool {
         self.plug
             .on
-            .get_option()
+            .get_control_option()
             .map(|current| current == desired)
             .unwrap_or(false)
     }
