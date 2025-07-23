@@ -31,23 +31,23 @@ where
         self.last_update = Instant::now();
     }
 
-    fn outdated(&self) -> bool {
-        Instant::now().duration_since(self.last_update) > self.timeout
-    }
-
     fn initialized(&self) -> bool {
         self.value.is_some()
     }
 
-    pub fn get_or_default(&self) -> T {
-        (!self.outdated())
+    fn control_outdated(&self) -> bool {
+        Instant::now().duration_since(self.last_update) > self.timeout
+    }
+
+    pub fn get_control_or_default(&self) -> T {
+        (!self.control_outdated())
             .then_some(self.value.clone())
             .flatten()
             .unwrap_or(self.default.clone())
     }
 
     pub fn get_option(&self) -> Option<T> {
-        if self.outdated() {
+        if self.control_outdated() {
             return None;
         }
 
@@ -59,7 +59,7 @@ where
     // - not initialized > timeout     -> error
     // - value outdated                -> error
     pub fn try_get(&self) -> Result<T, Error> {
-        if self.outdated() {
+        if self.control_outdated() {
             return Err(anyhow!("state outdated"));
         }
 
@@ -76,7 +76,7 @@ where
     T: Debug + PartialEq + Clone,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.outdated() {
+        if self.control_outdated() {
             f.write_fmt(format_args!(
                 "outdated (since {:?})",
                 Instant::now().duration_since(self.last_update),

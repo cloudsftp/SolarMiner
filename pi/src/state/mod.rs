@@ -47,7 +47,7 @@ struct PowerData {
 
 impl PartialState {
     pub fn new() -> Self {
-        let timeout = CONFIG.controller.sensor_data_outdated_interval;
+        let timeout = CONFIG.controller.sensor_data.control_duration;
 
         Self {
             plug: PartialPlugState {
@@ -57,7 +57,7 @@ impl PartialState {
                         total: 0.,
                         yesterday: 0.,
                         today: 0.,
-                        power: CONFIG.controller.miner_demand,
+                        power: CONFIG.controller.miner.demand,
                     },
                     timeout,
                 ),
@@ -82,9 +82,9 @@ impl PartialState {
 
 impl PartialState {
     pub fn mining_condition(&self) -> bool {
-        match self.inverter.battery_level.get_or_default() {
-            level if level > CONFIG.controller.battery_high_threshold => true,
-            level if level > CONFIG.controller.battery_low_threshold => {
+        match self.inverter.battery_level.get_control_or_default() {
+            level if level > CONFIG.controller.battery.high_threshold => true,
+            level if level > CONFIG.controller.battery.low_threshold => {
                 self.production_satisfies_miner()
             }
             _ => false,
@@ -94,16 +94,16 @@ impl PartialState {
     fn production_satisfies_miner(&self) -> bool {
         let PowerData {
             from_pv, to_house, ..
-        } = self.inverter.power.get_or_default();
+        } = self.inverter.power.get_control_or_default();
 
         from_pv - to_house > self.miner_demand()
     }
 
     fn miner_demand(&self) -> f32 {
-        if self.plug.on.get_or_default() {
+        if self.plug.on.get_control_or_default() {
             0.
         } else {
-            CONFIG.controller.miner_demand
+            CONFIG.controller.miner.demand
         }
     }
 

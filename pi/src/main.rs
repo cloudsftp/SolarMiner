@@ -36,11 +36,11 @@ impl App {
         let create_action_interval = |offset: u64| -> Result<_, Error> {
             let mut interval = interval_at(
                 Instant::now()
-                    .checked_add(CONFIG.controller.sensor_data_update_interval)
+                    .checked_add(CONFIG.controller.sensor_data.update_interval)
                     .context("Action interval start time not in range")?
                     .checked_add(Duration::from_secs(offset))
                     .context("Action interval start time not in range")?,
-                CONFIG.controller.controller_interval,
+                CONFIG.controller.controller.action_interval,
             );
             interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
@@ -51,7 +51,7 @@ impl App {
         let mut report_state = create_action_interval(1)?;
 
         let create_sensor_data_update_interval = || {
-            let mut interval = interval(CONFIG.controller.sensor_data_update_interval);
+            let mut interval = interval(CONFIG.controller.sensor_data.update_interval);
             interval.set_missed_tick_behavior(MissedTickBehavior::Skip);
 
             interval
@@ -71,9 +71,10 @@ impl App {
                         continue;
                     }
                 }
-                // TODO: instead create update_events stream and listen to that
-                // that stream icludes pi_messages mapped to UpdateEvents
-                // and inverter queries also mapped to update events
+                // TODO: instead create update_events stream and listen to that.
+                // That stream should include
+                // - pi_messages mapped to UpdateEvents and
+                // - inverter queries also mapped to UpdateEvents
                 Some(update_event) = update_events.next() => {
                     if let Err(err) = self.state.update(update_event).await {
                         // TODO: send out error message and continue
