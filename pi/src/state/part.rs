@@ -52,7 +52,7 @@ where
         self.get_control_option().unwrap_or(self.default.clone())
     }
 
-    fn get_control_option(&self) -> Option<T> {
+    pub fn get_control_option(&self) -> Option<T> {
         (!self.control_outdated())
             .then(|| self.value.clone())
             .flatten()
