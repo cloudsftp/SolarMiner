@@ -32,12 +32,8 @@ where
         self.last_update = Instant::now();
     }
 
-    // fn initialized(&self) -> bool {
-    //     self.value.is_some()
-    // }
-
     fn outdated(&self) -> bool {
-        Instant::now().duration_since(self.last_update) > self.control_timeout
+        Instant::now().duration_since(self.last_update) > self.timeout
     }
 
     pub fn get_option(&self) -> Option<T> {
@@ -57,22 +53,6 @@ where
             .then(|| self.value.clone())
             .flatten()
     }
-
-    // TODO: implement errors with thiserror?
-    // - not initialized               -> ignore
-    // - not initialized > timeout     -> error
-    // - value outdated                -> error
-    // pub fn try_control_get(&self) -> Result<T, Error> {
-    //     if self.control_outdated() {
-    //         return Err(anyhow!("state outdated"));
-    //     }
-
-    //     if !self.initialized() {
-    //         return Err(anyhow!("state not initialized"));
-    //     }
-
-    //     Ok(self.value.clone().unwrap())
-    // }
 }
 
 impl<T> Debug for Part<T>
