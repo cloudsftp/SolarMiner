@@ -3,9 +3,9 @@
 * Storage
 
 #+begin_src rust
-const MEGA: f64 = 1e3;
+const MEGA: f64 = 1024.;
 
-const BYTES_PER_NUM: f64 = 4.; // 64 bits
+const BYTES_PER_NUM: f64 = 4.; // 32 bits
 const NUMBERS_PER_EVENT: f64 = 10.;
 
 const BYTES_PER_EVENT: f64 = NUMBERS_PER_EVENT * BYTES_PER_NUM;
@@ -14,14 +14,19 @@ fn storage(time: f64, duration: f64) -> f64 {
     time / duration * BYTES_PER_EVENT / MEGA
 }
 
- // minutes
-let time = 30. * 24. * 60. * 1.;
+let time = 24. * 60. * 60.; // seconds
+let duration = 10. * 1.;
+println!(
+    "Every {} sec for one day: {}MB",
+    duration, storage(time, duration),
+);
+
+let time = 30. * 24. * 60. * 1.; // minutes
 let duration = 15. * 1.;
 println!(
     "Every {} min for one month: {}MB",
     duration, storage(time, duration),
 );
-
 
 let time = 365. * 24. * 1.; // hours
 let duration = 24. * 1.;
@@ -32,5 +37,6 @@ println!(
 #+end_src
 
 #+RESULTS:
-: Every 5min for one month: 345.6MB
+: Every 10 sec for one day: 345.6MB
+: Every 15 min for one month: 115.2MB
 : Every hour for one year: 14.6MB
