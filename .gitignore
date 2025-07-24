@@ -2,6 +2,8 @@
 .secrets
 config.yaml
 
+backup
+
 # Added by cargo
 
 /target

@@ -18,17 +18,42 @@ pub struct CommunicationConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct ControllerConfig {
+    pub controller: Controller,
+    pub sensor_data: SensorData,
+    pub switch: Switch,
+    pub miner: Miner,
+    pub battery: Battery,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Controller {
     #[serde(deserialize_with = "deserialize_duration")]
-    pub controller_interval: Duration,
+    pub action_interval: Duration,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SensorData {
     #[serde(deserialize_with = "deserialize_duration")]
-    pub sensor_data_update_interval: Duration,
+    pub update_interval: Duration,
     #[serde(deserialize_with = "deserialize_duration")]
-    pub sensor_data_outdated_interval: Duration,
+    pub control_duration: Duration,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Switch {
     #[serde(deserialize_with = "deserialize_duration")]
-    pub switch_debounce_duration: Duration,
-    pub miner_demand: f32,
-    pub battery_low_threshold: f32,
-    pub battery_high_threshold: f32,
+    pub debounce_duration: Duration,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Miner {
+    pub demand: f32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Battery {
+    pub low_threshold: f32,
+    pub high_threshold: f32,
 }
 
 impl Config {

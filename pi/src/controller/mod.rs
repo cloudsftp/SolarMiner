@@ -14,7 +14,7 @@ pub struct Controller {
 impl Controller {
     pub fn new() -> Self {
         Controller {
-            switch: DampenedSwitch::new(CONFIG.controller.switch_debounce_duration),
+            switch: DampenedSwitch::new(CONFIG.controller.switch.debounce_duration),
         }
     }
 }

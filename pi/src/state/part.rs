@@ -1,4 +1,3 @@
-use anyhow::{Error, anyhow};
 use std::{fmt::Debug, time::Duration};
 use tokio::time::Instant;
 
@@ -11,18 +10,20 @@ where
     last_update: Instant,
     default: T,
     timeout: Duration,
+    control_timeout: Duration,
 }
 
 impl<T> Part<T>
 where
     T: Debug + PartialEq + Clone,
 {
-    pub fn new(default: T, timeout: Duration) -> Self {
+    pub fn new(default: T, timeout: Duration, control_timeout: Duration) -> Self {
         Part {
             value: None,
             last_update: Instant::now(),
             default,
             timeout,
+            control_timeout,
         }
     }
 
@@ -35,39 +36,22 @@ where
         Instant::now().duration_since(self.last_update) > self.timeout
     }
 
-    fn initialized(&self) -> bool {
-        self.value.is_some()
-    }
-
-    pub fn get_or_default(&self) -> T {
-        (!self.outdated())
-            .then_some(self.value.clone())
-            .flatten()
-            .unwrap_or(self.default.clone())
-    }
-
     pub fn get_option(&self) -> Option<T> {
-        if self.outdated() {
-            return None;
-        }
-
-        self.value.clone()
+        (!self.outdated()).then(|| self.value.clone()).flatten()
     }
 
-    // TODO: implement errors with thiserror?
-    // - not initialized               -> ignore
-    // - not initialized > timeout     -> error
-    // - value outdated                -> error
-    pub fn try_get(&self) -> Result<T, Error> {
-        if self.outdated() {
-            return Err(anyhow!("state outdated"));
-        }
+    fn control_outdated(&self) -> bool {
+        Instant::now().duration_since(self.last_update) > self.control_timeout
+    }
 
-        if !self.initialized() {
-            return Err(anyhow!("state not initialized"));
-        }
+    pub fn get_control_or_default(&self) -> T {
+        self.get_control_option().unwrap_or(self.default.clone())
+    }
 
-        Ok(self.value.clone().unwrap())
+    pub fn get_control_option(&self) -> Option<T> {
+        (!self.control_outdated())
+            .then(|| self.value.clone())
+            .flatten()
     }
 }
 
@@ -76,7 +60,7 @@ where
     T: Debug + PartialEq + Clone,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if self.outdated() {
+        if self.control_outdated() {
             f.write_fmt(format_args!(
                 "outdated (since {:?})",
                 Instant::now().duration_since(self.last_update),

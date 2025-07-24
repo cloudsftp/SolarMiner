@@ -4,10 +4,15 @@ communication:
     plug_name: plug_bitaxe_001
 
 controller:
-    controller_interval: 10s
-    sensor_data_update_interval: 5s
-    sensor_data_outdated_interval: 1min
-    switch_debounce_duration: 30s
-    miner_demand: 30
-    battery_low_threshold: 10.
-    battery_high_threshold: 30.
+    controller:
+        action_interval: 10s
+    sensor_data:
+        update_interval: 5s
+        control_duration: 1min
+    switch:
+        debounce_duration: 30s
+    miner:
+        demand: 30
+    battery:
+        low_threshold: 10.
+        high_threshold: 30.
