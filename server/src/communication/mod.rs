@@ -7,8 +7,9 @@ use async_nats::jetstream::{
 };
 use futures::TryStreamExt;
 use futures_util::{Stream, StreamExt};
+use log::{error, trace};
 
-use crate::events::StateUpdateEvent;
+use crate::events::StateUpdateEventMessage;
 
 #[derive(Debug, Clone)]
 pub struct Communication {
@@ -16,7 +17,7 @@ pub struct Communication {
     state_stream_consumer: Consumer<Config>,
 }
 
-impl TryFrom<Message> for StateUpdateEvent {
+impl TryFrom<Message> for StateUpdateEventMessage {
     type Error = Error;
 
     fn try_from(value: Message) -> Result<Self, Self::Error> {
@@ -27,12 +28,27 @@ impl TryFrom<Message> for StateUpdateEvent {
 impl Communication {
     pub async fn get_state_events(
         &self,
-    ) -> Result<impl Stream<Item = Result<StateUpdateEvent, Error>>, Error> {
+    ) -> Result<impl Stream<Item = Result<StateUpdateEventMessage, Error>>, Error> {
         Ok(self
             .state_stream_consumer
             .messages()
             .await?
             .map_err(Error::from)
-            .map(|message| message.and_then(StateUpdateEvent::try_from)))
+            .map(|message| {
+                message
+                    .inspect_err(|err| {
+                        error!(
+                            "could not receive message from controller state stream: {}",
+                            err,
+                        )
+                    })
+                    .inspect(|message| {
+                        trace!(
+                            "received message from controller state stream:\n{:?}",
+                            message,
+                        );
+                    })
+                    .and_then(StateUpdateEventMessage::try_from)
+            }))
     }
 }
