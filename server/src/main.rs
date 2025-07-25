@@ -2,7 +2,7 @@ use anyhow::{Context, Error};
 use config::Config;
 use dotenv::dotenv;
 use futures::StreamExt;
-use log::{error, info};
+use log::{error, info, trace};
 use once_cell::sync::Lazy;
 use tokio::signal::unix::{self, SignalKind};
 
@@ -24,6 +24,7 @@ impl App {
         let mut state_events = comm.get_state_events().await?;
 
         while let Some(state_event) = state_events.next().await {
+            info!("received event {:?}", state_event);
             dbg!(state_event);
         }
 
