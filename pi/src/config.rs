@@ -62,7 +62,7 @@ impl Config {
             File::open(file_name).context(format!("Could not open config file '{file_name}'"))?;
         let config_file = BufReader::new(config_file);
 
-        serde_yaml::from_reader(config_file)
+        serde_yaml_ng::from_reader(config_file)
             .context(format!("Could not parse config file '{file_name}'"))
     }
 }
