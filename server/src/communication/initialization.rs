@@ -1,7 +1,7 @@
 use anyhow::{Context as AnyhowContext, Error};
 use async_nats::{
     Client, ConnectOptions,
-    jetstream::{self, Context, consumer, stream},
+    jetstream::{self, Context, consumer, kv, stream},
 };
 use std::{env, time::Duration};
 
@@ -23,20 +23,38 @@ impl Communication {
         let server_nats = connect_nats_client("SERVER").await?;
         let js = jetstream::new(server_nats);
 
+        let consumer_name = if CONFIG.development {
+            "service-dev"
+        } else {
+            "service"
+        }
+        .to_string();
+
         create_service_streams(&js).await?;
         let state_stream_consumer = js
             .create_consumer_on_stream(
                 consumer::pull::Config {
-                    durable_name: Some("service".to_string()),
+                    durable_name: Some(consumer_name),
                     ..Default::default()
                 },
                 &CONFIG.state_stream_name,
             )
-            .await?;
+            .await
+            .context(format!(
+                "could not create consumer on stream '{}'",
+                CONFIG.state_stream_name,
+            ))?;
+
+        create_service_kvs(&js).await?;
+        let aggregation_kv = js
+            .get_key_value(&CONFIG.aggregation_kv_name)
+            .await
+            .context(format!("could not get kv '{}'", CONFIG.state_stream_name))?;
 
         Ok(Self {
             js,
             state_stream_consumer,
+            aggregation_kv,
         })
     }
 }
@@ -62,6 +80,21 @@ async fn create_service_streams(js: &Context) -> Result<(), Error> {
 
     Ok(())
 }
+
+async fn create_service_kvs(js: &Context) -> Result<(), Error> {
+    js.create_or_update_key_value(kv::Config {
+        bucket: CONFIG.aggregation_kv_name.clone(),
+        ..Default::default()
+    })
+    .await
+    .context(format!(
+        "could not create aggregation kv '{}'",
+        CONFIG.aggregation_kv_name
+    ))?;
+
+    Ok(())
+}
+
 async fn connect_nats_client(prefix: &str) -> Result<Client, Error> {
     let host = env::var("NATS_HOST").context("reading NATS_HOST")?;
     let port = env::var("NATS_PORT").context("reading NATS_PORT")?;
