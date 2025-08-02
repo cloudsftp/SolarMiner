@@ -10,6 +10,7 @@ use crate::CONFIG;
 use super::Communication;
 
 const SECONDS_IN_A_DAY: u64 = 24 * 60 * 60;
+const SECONDS_IN_A_WEEK: u64 = 7 * SECONDS_IN_A_DAY;
 
 #[derive(Debug, Clone)]
 pub struct StreamInfo {
@@ -44,7 +45,7 @@ async fn create_service_streams(js: &Context) -> Result<(), Error> {
     js.create_or_update_stream(stream::Config {
         name: CONFIG.state_stream_name.to_string(),
         discard: stream::DiscardPolicy::Old,
-        max_age: Duration::from_secs(SECONDS_IN_A_DAY),
+        max_age: Duration::from_secs(SECONDS_IN_A_WEEK),
         ..Default::default()
     })
     .await
@@ -53,7 +54,7 @@ async fn create_service_streams(js: &Context) -> Result<(), Error> {
     js.create_or_update_stream(stream::Config {
         name: CONFIG.commands_stream_name.to_string(),
         discard: stream::DiscardPolicy::Old,
-        max_age: Duration::from_secs(SECONDS_IN_A_DAY),
+        max_age: Duration::from_secs(SECONDS_IN_A_WEEK),
         ..Default::default()
     })
     .await
