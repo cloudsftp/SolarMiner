@@ -3,7 +3,7 @@
 * Storage
 
 #+begin_src rust
-const MEGA: f64 = 1024.;
+const MEGA: f64 = 1024. * 1024.;
 
 const BYTES_PER_NUM: f64 = 4.; // 32 bits
 const NUMBERS_PER_EVENT: f64 = 10.;
@@ -37,6 +37,6 @@ println!(
 #+end_src
 
 #+RESULTS:
-: Every 10 sec for one day: 345.6MB
-: Every 15 min for one month: 115.2MB
-: Every hour for one year: 14.6MB
+: Every 10 sec for one day: 0.32958984375MB
+: Every 15 min for one month: 0.10986328125MB
+: Every hour for one year: 0.01392364501953125MB
