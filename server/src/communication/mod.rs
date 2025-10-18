@@ -4,6 +4,7 @@ use anyhow::{Context as _, Error};
 use async_nats::jetstream::{
     Context, Message,
     consumer::{Consumer, pull::Config},
+    kv,
 };
 use futures::TryStreamExt;
 use futures_util::{Stream, StreamExt};
@@ -15,6 +16,7 @@ use crate::events::StateUpdateEventMessage;
 pub struct Communication {
     js: Context,
     state_stream_consumer: Consumer<Config>,
+    aggregation_kv: kv::Store,
 }
 
 impl TryFrom<Message> for StateUpdateEventMessage {

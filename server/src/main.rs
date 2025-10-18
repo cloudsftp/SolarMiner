@@ -1,20 +1,22 @@
+mod communication;
+mod config;
+mod state;
+
 use anyhow::{Context, Error};
 use config::Config;
 use dotenv::dotenv;
 use futures::StreamExt;
 use log::{error, info, trace};
 use once_cell::sync::Lazy;
+use solarminer_service::events::StateUpdateEventMessage;
+use state::State;
 use tokio::signal::unix::{self, SignalKind};
-
-mod communication;
-mod config;
-mod events;
 
 use communication::Communication;
 
 #[derive(Debug)]
 struct App {
-    //house_state: PartialState,
+    state: State,
 }
 
 static CONFIG: Lazy<Config> = Lazy::new(|| config::load().expect("could not load config"));
@@ -25,7 +27,18 @@ impl App {
 
         while let Some(state_event) = state_events.next().await {
             info!("received event {:?}", state_event);
-            dbg!(state_event);
+
+            let state_event = match state_event {
+                Ok(state_event) => state_event,
+                Err(err) => {
+                    error!("while receiving message from state event stream: {}", err);
+                    continue;
+                }
+            };
+
+            self.state
+                .handle_update_state_event(&state_event, &comm)
+                .await?;
         }
 
         Ok(())
@@ -35,7 +48,7 @@ impl App {
 impl App {
     fn new() -> Self {
         App {
-    //        state: PartialState::new(),
+            state: State::new(),
         }
     }
 }
